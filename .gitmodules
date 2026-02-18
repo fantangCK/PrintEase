@@ -1,0 +1,3 @@
+[submodule "mpay"]
+	path = mpay
+	url = https://github.com/fantangCK/mpay.git
