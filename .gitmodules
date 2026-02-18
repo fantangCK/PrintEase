@@ -1,3 +1,6 @@
 [submodule "mpay"]
 	path = mpay
 	url = https://github.com/fantangCK/mpay.git
+[submodule "PrintEase-uniapp"]
+	path = PrintEase-uniapp
+	url = https://github.com/fantangCK/PrintEase-uniapp.git
