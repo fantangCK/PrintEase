@@ -4,3 +4,12 @@
 [submodule "PrintEase-uniapp"]
 	path = PrintEase-uniapp
 	url = https://github.com/fantangCK/PrintEase-uniapp.git
+[submodule "PrintEase-admin"]
+	path = PrintEase-admin
+	url = https://github.com/fantangCK/PrintEase-admin.git
+[submodule "PrintEase-backend"]
+	path = PrintEase-backend
+	url = https://github.com/fantangCK/PrintEase-backend.git
+[submodule "PrintEase-dispatch"]
+	path = PrintEase-dispatch
+	url = https://github.com/fantangCK/PrintEase-dispatch.git
