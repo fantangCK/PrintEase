@@ -6,10 +6,10 @@
 	url = https://github.com/fantangCK/PrintEase-uniapp.git
 [submodule "PrintEase-admin"]
 	path = PrintEase-admin
-	url = https://github.com/fantangCK/PrintEase-admin.git
+	url = https://github.com/fantangCK/PrintEase-admin
 [submodule "PrintEase-backend"]
 	path = PrintEase-backend
-	url = https://github.com/fantangCK/PrintEase-backend.git
+	url = https://github.com/fantangCK/PrintEase-backend
 [submodule "PrintEase-dispatch"]
 	path = PrintEase-dispatch
-	url = https://github.com/fantangCK/PrintEase-dispatch.git
+	url = https://github.com/fantangCK/PrintEase-dispatch
