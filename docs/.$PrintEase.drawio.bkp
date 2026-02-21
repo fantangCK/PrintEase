@@ -1,6 +1,6 @@
 <mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.3.6 Chrome/140.0.7339.249 Electron/38.8.0 Safari/537.36" version="29.3.6">
   <diagram name="Page-1" id="5d7acffa-a066-3a61-03fe-96351882024d">
-    <mxGraphModel dx="1211" dy="718" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" background="none" math="0" shadow="0">
+    <mxGraphModel dx="1453" dy="862" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" background="none" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -233,12 +233,6 @@
         </mxCell>
         <mxCell id="D7URahVeeWWm7aE1SLQ5-67" parent="D7URahVeeWWm7aE1SLQ5-64" style="shape=umlFrame;whiteSpace=wrap;html=1;pointerEvents=0;recursiveResize=0;container=1;collapsible=0;width=70;height=30;" value="后端" vertex="1">
           <mxGeometry height="240" width="360" x="80" y="400" as="geometry" />
-        </mxCell>
-        <mxCell id="ED82kCyZi_khnI7DFklD-1" parent="D7URahVeeWWm7aE1SLQ5-67" style="whiteSpace=wrap;html=1;aspect=fixed;" value="Office&lt;br&gt;文件转换" vertex="1">
-          <mxGeometry height="80" width="80" x="251" y="60" as="geometry" />
-        </mxCell>
-        <mxCell id="ED82kCyZi_khnI7DFklD-2" parent="D7URahVeeWWm7aE1SLQ5-67" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" value="数据库" vertex="1">
-          <mxGeometry height="80" width="60" x="30" y="130" as="geometry" />
         </mxCell>
         <mxCell id="D7URahVeeWWm7aE1SLQ5-65" parent="D7URahVeeWWm7aE1SLQ5-64" style="shape=umlFrame;whiteSpace=wrap;html=1;pointerEvents=0;recursiveResize=0;container=1;collapsible=0;width=120;height=30;" value="用户侧" vertex="1">
           <mxGeometry height="240" width="360" x="80" y="80" as="geometry" />
