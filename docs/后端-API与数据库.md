@@ -319,7 +319,7 @@ npm run migration:revert
 
 ### 2.1 微信登录
 
-**接口**: `POST /auth/wechat-login`
+**接口**: `POST /auth/wechat`
 
 **描述**: 使用微信 code 登录或注册
 
@@ -333,7 +333,7 @@ npm run migration:revert
 **响应**:
 ```typescript
 {
-  code: 200;
+  code: 0;
   message: "success";
   data: {
     accessToken: string;  // JWT Token
@@ -342,6 +342,38 @@ npm run migration:revert
       openid: string;
       nickname?: string;
       avatar?: string;
+    }
+  }
+}
+```
+
+### 2.2 商户登录
+
+**接口**: `POST /auth/merchant`
+
+**描述**: 商户使用手机号和密码登录
+
+**请求参数**:
+```typescript
+{
+  phone: string;      // 手机号
+  password: string;   // 密码
+}
+```
+
+**响应**:
+```typescript
+{
+  code: 0;
+  message: "success";
+  data: {
+    accessToken: string;  // JWT Token
+    merchant: {
+      id: number;
+      name: string;
+      phone: string;
+      address?: string;
+      apiKey: string;
     }
   }
 }
@@ -365,7 +397,7 @@ npm run migration:revert
 **响应**:
 ```typescript
 {
-  code: 200;
+  code: 0;
   message: "success";
   data: {
     id: number;
@@ -484,7 +516,7 @@ npm run migration:revert
 **响应**:
 ```typescript
 {
-  code: 200;
+  code: 0;
   message: "success";
   data: {
     id: string;               // 订单号
@@ -747,7 +779,7 @@ npm run migration:revert
 
 ### 6.1 管理员登录
 
-**接口**: `POST /admin/login`
+**接口**: `POST /auth/admin`
 
 **描述**: 管理员登录
 
@@ -762,7 +794,7 @@ npm run migration:revert
 **响应**:
 ```typescript
 {
-  code: 200;
+  code: 0;
   message: "success";
   data: {
     accessToken: string;
