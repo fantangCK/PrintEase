@@ -64,7 +64,8 @@ USE `print_ease`;
 | 值 | 说明 |
 |----|------|
 | 0 | 单面 |
-| 1 | 双面 |
+| 1 | 长边翻转 |
+| 2 | 短边翻转 |
 
 ### 3.6 管理员角色 (admin_role)
 | 值 | 说明 |
@@ -128,7 +129,8 @@ USE `print_ease`;
 | copies | INT | NOT NULL | 1 | 打印份数 |
 | paper_size | VARCHAR(10) | NOT NULL | 'A4' | 纸张大小（A4/A5/A3） |
 | color_type | TINYINT | NOT NULL | 0 | 颜色类型（0:黑白, 1:彩色） |
-| double_sided | TINYINT | NOT NULL | 0 | 双面打印（0:单面, 1:双面） |
+| double_sided | TINYINT | NOT NULL | 0 | 双面打印（0:单面, 1:长边, 2:短边） |
+| page_range | VARCHAR(50) | NULL | NULL | 打印页码范围（如 "1-5, 8"） |
 | print_quality | VARCHAR(20) | NOT NULL | 'normal' | 打印质量（draft/normal/high） |
 | total_amount | DECIMAL(10,2) | NOT NULL | 0.00 | 总金额（元） |
 | status | TINYINT | NOT NULL | 0 | 订单状态（见枚举） |
@@ -470,7 +472,8 @@ npm run migration:revert
   copies: number;             // 打印份数
   paperSize: string;          // 纸张大小（A4/A5/A3）
   colorType: number;          // 颜色类型（0=黑白，1=彩色）
-  doubleSided: number;        // 双面打印（0=单面，1=双面）
+  doubleSided: number;        // 双面打印（0=单面，1=长边，2=短边）
+  pageRange?: string;         // 打印页码范围（可选，如 "1-5, 8"）
   printQuality: string;       // 打印质量（draft/normal/high）
   remark?: string;            // 备注（可选）
   deliveryAddress?: string;   // 派送地址（可选）
@@ -1074,26 +1077,15 @@ x-api-key: {你的API Key}
 
 ---
 
-### 4.6 标记打印任务失败
+### 4.5 获取待接单列表
 
-**接口**: `PUT /api/merchant/tasks/:id/fail`
+**接口**: `GET /api/merchant/tasks/unassigned`
 
-**描述**: 标记任务打印失败
+**描述**: 获取所有待处理且未分配的订单
 
 **请求 Header**:
 ```
 x-api-key: {你的API Key}
-Content-Type: application/json
-```
-
-**路径参数**:
-- `id`: 打印任务 ID
-
-**请求 Body**:
-```json
-{
-  "errorMsg": "打印机缺纸"
-}
 ```
 
 **响应**:
@@ -1102,10 +1094,60 @@ Content-Type: application/json
   "code": 0,
   "message": "success",
   "data": {
-    "id": "PT202502190001",
-    "status": 4,
-    "errorMsg": "打印机缺纸"
+    "list": [
+      {
+        "id": "20250219123456",
+        "totalAmount": 5.5,
+        "totalPages": 11,
+        // ...
+      }
+    ],
+    "total": 10
   }
+}
+```
+
+### 4.6 商户接单
+
+**接口**: `POST /api/merchant/tasks/:id/grab`
+
+**描述**: 商户接取指定的待处理订单
+
+**请求 Header**:
+```
+x-api-key: {你的API Key}
+```
+
+**路径参数**:
+- `id`: 订单 ID
+
+**响应**:
+```json
+{
+  "code": 0,
+  "message": "接单成功"
+}
+```
+
+### 4.7 取消接单（释放订单）
+
+**接口**: `POST /api/merchant/tasks/:id/cancel`
+
+**描述**: 商户取消已接的订单，释放回待接单池
+
+**请求 Header**:
+```
+x-api-key: {你的API Key}
+```
+
+**路径参数**:
+- `id`: 订单 ID
+
+**响应**:
+```json
+{
+  "code": 0,
+  "message": "取消接单成功，订单已释放"
 }
 ```
 
@@ -1866,7 +1908,7 @@ ADD INDEX `idx_merchant_id` (`merchant_id`);
 | /pages/merchant/index | 商户中心 | 商户端主页面 |
 | /pages/merchant/login | 商户登录 | 商户登录页面 |
 | /pages/merchant/settings | 商户设置 | 商户设置页面 |
-| /pages/merchant/grab-orders | 抢单大厅 | 抢单大厅页面 |
+| /pages/merchant/grab-orders | 接单大厅 | 接单大厅页面 |
 
 ---
 

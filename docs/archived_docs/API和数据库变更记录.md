@@ -616,7 +616,7 @@ ADD INDEX `idx_merchant_id` (`merchant_id`);
 | /pages/merchant/index | 商户中心 | 商户端主页面 |
 | /pages/merchant/login | 商户登录 | 商户登录页面 |
 | /pages/merchant/settings | 商户设置 | 商户设置页面 |
-| /pages/merchant/grab-orders | 抢单大厅 | 抢单大厅页面 |
+| /pages/merchant/grab-orders | 接单大厅 | 接单大厅页面 |
 
 ---
 
