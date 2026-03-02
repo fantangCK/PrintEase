@@ -374,6 +374,8 @@ npm run migration:revert
       phone: string;
       address?: string;
       apiKey: string;
+      mainBuildingId?: number;
+      mainBuildingName?: string;
     }
   }
 }
@@ -402,11 +404,11 @@ npm run migration:revert
   data: {
     id: number;
     fileName: string;
-    filePath: string;
     fileSize: number;
     fileType: string;
     fileExt: string;
-    totalPages?: number;
+    conversionStatus: string;
+    createdAt: string;
   }
 }
 ```
@@ -434,6 +436,11 @@ npm run migration:revert
     fileExt: string;
     totalPages?: number;
     convertedPdfPath?: string;
+    conversionStatus: string;
+    blackWhiteCoverage?: number;
+    colorCoverage?: number;
+    conversionError?: string;
+    convertedAt?: string;
     createdAt: string;
   }
 }
@@ -467,20 +474,22 @@ npm run migration:revert
   code: 200;
   message: "success";
   data: {
-    items: [
+    list: [
       {
         id: number;
         fileName: string;
-        filePath: string;
         fileSize: number;
+        fileType: string;
         fileExt: string;
         totalPages?: number;
+        conversionStatus: string;
         createdAt: string;
       }
     ],
     total: number;
     page: number;
     limit: number;
+    totalPages: number;
   }
 }
 ```
@@ -500,7 +509,7 @@ npm run migration:revert
 **请求参数**:
 ```typescript
 {
-  fileIds: number[];         // 文件 ID 列表
+  files: Array<{ fileId: number; pages?: number }>; // 文件 ID 和页数列表
   copies: number;             // 打印份数
   paperSize: string;          // 纸张大小（A4/A5/A3）
   colorType: number;          // 颜色类型（0=黑白，1=彩色）
@@ -508,8 +517,11 @@ npm run migration:revert
   pageRange?: string;         // 打印页码范围（可选，如 "1-5, 8"）
   printQuality: string;       // 打印质量（draft/normal/high）
   remark?: string;            // 备注（可选）
-  deliveryAddress?: string;   // 派送地址（可选）
-  deliveryTime?: string;      // 派送时间（可选）
+  deliveryBuildingId: number; // 派送楼栋ID
+  deliveryBuildingName: string; // 派送楼栋名称
+  deliveryTimeSlotId: number; // 派送时间段ID
+  deliveryTimeSlotName: string; // 派送时间段名称
+  deliveryTime: string;       // 派送时间
 }
 ```
 
@@ -530,16 +542,25 @@ npm run migration:revert
     totalAmount: number;
     status: number;
     remark?: string;
-    deliveryAddress?: string;
-    deliveryTime?: string;
+    pageRange?: string;
+    deliveryBuildingId: number;
+    deliveryBuildingName: string;
+    deliveryTimeSlotId: number;
+    deliveryTimeSlotName: string;
+    deliveryTime: string;
     createdAt: string;
-    files: [                  // 订单文件列表
+    orderFiles: [             // 订单文件列表
       {
         id: number;
-        fileName: string;
-        filePath: string;
-        convertedPdfPath?: string;
+        fileId: number;
         pages: number;
+        file: {
+          id: number;
+          fileName: string;
+          fileExt: string;
+          totalPages: number;
+          convertedPdfPath: string;
+        }
       }
     ]
   }
@@ -565,19 +586,33 @@ npm run migration:revert
   code: 200;
   message: "success";
   data: {
-    items: [
+    list: [
       {
         id: string;
         totalPages: number;
         copies: number;
+        paperSize: string;
+        colorType: number;
+        doubleSided: number;
+        printQuality: string;
         totalAmount: number;
         status: number;
+        remark?: string;
+        mpayTradeNo?: string;
+        mpayPayUrl?: string;
         createdAt: string;
-        files: [
+        orderFiles: [
           {
             id: number;
-            fileName: string;
-            convertedPdfPath?: string;
+            fileId: number;
+            pages: number;
+            file: {
+              id: number;
+              fileName: string;
+              fileExt: string;
+              totalPages: number;
+              convertedPdfPath: string;
+            }
           }
         ]
       }
@@ -585,6 +620,7 @@ npm run migration:revert
     total: number;
     page: number;
     limit: number;
+    totalPages: number;
   }
 }
 ```
@@ -614,18 +650,38 @@ npm run migration:revert
     totalAmount: number;
     status: number;
     remark?: string;
-    deliveryAddress?: string;
-    deliveryTime?: string;
+    pageRange?: string;
+    deliveryBuildingId: number;
+    deliveryBuildingName: string;
+    deliveryTimeSlotId: number;
+    deliveryTimeSlotName: string;
+    deliveryTime: string;
     printTime?: string;
+    mpayTradeNo?: string;
+    mpayPayUrl?: string;
+    mpayRealPrice?: number;
+    mpayCreatedAt?: string;
+    merchantId?: number;
+    merchant?: {
+      id: number;
+      name: string;
+      phone: string;
+    };
+    deliveryImageUrl?: string;
     createdAt: string;
     updatedAt: string;
-    files: [
+    orderFiles: [
       {
         id: number;
-        fileName: string;
-        filePath: string;
-        convertedPdfPath?: string;
+        fileId: number;
         pages: number;
+        file: {
+          id: number;
+          fileName: string;
+          fileExt: string;
+          totalPages: number;
+          convertedPdfPath: string;
+        }
       }
     ]
   }
@@ -648,6 +704,62 @@ npm run migration:revert
   data: {
     id: string;
     status: number;  // 4 = 已取消
+  }
+}
+```
+
+### 4.5 创建支付
+
+**接口**: `POST /orders/:id/pay`
+
+**描述**: 为订单创建支付链接
+
+**认证**: 需要
+
+**响应**:
+```typescript
+{
+  code: 0;
+  message: "success";
+  data: {
+    tradeNo: string;
+    payUrl: string;
+    realPrice?: number;
+  }
+}
+```
+
+### 4.6 刷新订单状态
+
+**接口**: `PUT /orders/:id/refresh`
+
+**描述**: 刷新订单状态，检查支付是否完成
+
+**认证**: 需要
+
+**响应**:
+```typescript
+{
+  code: 0;
+  message: "success";
+  data: {
+    id: string;
+    status: number;
+    totalAmount: number;
+    orderFiles: [
+      {
+        id: number;
+        fileId: number;
+        pages: number;
+        file: {
+          id: number;
+          fileName: string;
+          fileExt: string;
+          totalPages: number;
+          convertedPdfPath: string;
+        }
+      }
+    ]
   }
 }
 ```
@@ -933,76 +1045,18 @@ curl -H "x-api-key: abc123def456..." \
 
 ---
 
-## 四、商户打印任务 API
+## 四、商户 API
 
-### 4.1 获取所有打印任务
+### 4.1 获取商户信息
 
-**接口**: `GET /api/merchant/tasks`
+**接口**: `GET /merchant/tasks/profile`
 
-**描述**: 获取该商户的所有打印任务
-
-**请求 Header**:
-```
-x-api-key: {你的API Key}
-```
-
-**响应**:
-```json
-{
-  "code": 0,
-  "message": "success",
-  "data": [
-    {
-      "id": "PT202502190001",
-      "orderId": "PE202502190001",
-      "merchantId": 1,
-      "fileId": 1,
-      "printParams": {
-        "copies": 1,
-        "colorType": 0,
-        "doubleSided": 0,
-        "paperSize": "A4"
-      },
-      "status": 0,
-      "createdAt": "2025-02-19T10:00:00.000Z",
-      "order": { ... },
-      "file": { ... }
-    }
-  ]
-}
-```
-
----
-
-### 4.2 获取待处理的打印任务
-
-**接口**: `GET /api/merchant/tasks/pending`
-
-**描述**: 获取状态为「待分配」的打印任务
+**描述**: 获取商户信息
 
 **请求 Header**:
 ```
 x-api-key: {你的API Key}
 ```
-
-**响应**:
-同 4.1，但只返回 `status = 0`（待分配）的任务
-
----
-
-### 4.3 获取打印任务详情
-
-**接口**: `GET /api/merchant/tasks/:id`
-
-**描述**: 获取指定打印任务的详细信息
-
-**请求 Header**:
-```
-x-api-key: {你的API Key}
-```
-
-**路径参数**:
-- `id`: 打印任务 ID
 
 **响应**:
 ```json
@@ -1010,60 +1064,40 @@ x-api-key: {你的API Key}
   "code": 0,
   "message": "success",
   "data": {
-    "id": "PT202502190001",
-    "orderId": "PE202502190001",
-    "merchantId": 1,
-    "fileId": 1,
-    "printParams": {
-      "copies": 1,
-      "colorType": 0,
-      "doubleSided": 0,
-      "paperSize": "A4",
-      "printQuality": "normal"
-    },
-    "status": 0,
-    "errorMsg": null,
-    "startedAt": null,
-    "completedAt": null,
-    "createdAt": "2025-02-19T10:00:00.000Z",
-    "updatedAt": "2025-02-19T10:00:00.000Z",
-    "order": {
-      "id": "PE202502190001",
-      "userId": 1,
-      "totalPages": 5,
-      "copies": 1,
-      "totalAmount": 0.5,
-      "status": 1,
-      "remark": "请快速打印",
-      "createdAt": "2025-02-19T10:00:00.000Z"
-    },
-    "file": {
-      "id": 1,
-      "fileName": "test.pdf",
-      "filePath": "uploads/.../test.pdf",
-      "convertedPdfPath": "uploads/.../test.pdf",
-      "fileSize": 102400,
-      "totalPages": 5
-    }
+    "id": 1,
+    "name": "打印店-1栋",
+    "phone": "13800138001",
+    "address": "1栋101室",
+    "mainBuildingId": 1,
+    "mainBuildingName": "1栋",
+    "status": 1,
+    "apiKey": "your-api-key",
+    "createdAt": "2024-01-20T10:30:00.000Z"
   }
 }
 ```
 
 ---
 
-### 4.4 开始打印任务
+### 4.2 更新商户信息
 
-**接口**: `PUT /api/merchant/tasks/:id/start`
+**接口**: `PUT /merchant/tasks/profile`
 
-**描述**: 标记任务开始打印
+**描述**: 更新商户信息
 
 **请求 Header**:
 ```
 x-api-key: {你的API Key}
 ```
 
-**路径参数**:
-- `id`: 打印任务 ID
+**请求参数**:
+```json
+{
+  "address": "1栋101室",
+  "mainBuildingId": 1,
+  "mainBuildingName": "1栋"
+}
+```
 
 **响应**:
 ```json
@@ -1071,28 +1105,31 @@ x-api-key: {你的API Key}
   "code": 0,
   "message": "success",
   "data": {
-    "id": "PT202502190001",
-    "status": 2,
-    "startedAt": "2025-02-19T10:05:00.000Z"
+    "id": 1,
+    "name": "打印店-1栋",
+    "phone": "13800138001",
+    "address": "1栋101室",
+    "mainBuildingId": 1,
+    "mainBuildingName": "1栋",
+    "status": 1,
+    "apiKey": "your-api-key",
+    "createdAt": "2024-01-20T10:30:00.000Z"
   }
 }
 ```
 
 ---
 
-### 4.5 完成打印任务
+### 4.3 获取商户统计信息
 
-**接口**: `PUT /api/merchant/tasks/:id/complete`
+**接口**: `GET /merchant/tasks/stats`
 
-**描述**: 标记任务打印完成
+**描述**: 获取商户统计信息
 
 **请求 Header**:
 ```
 x-api-key: {你的API Key}
 ```
-
-**路径参数**:
-- `id`: 打印任务 ID
 
 **响应**:
 ```json
@@ -1100,25 +1137,30 @@ x-api-key: {你的API Key}
   "code": 0,
   "message": "success",
   "data": {
-    "id": "PT202502190001",
-    "status": 3,
-    "completedAt": "2025-02-19T10:10:00.000Z"
+    "pending": 5,
+    "processing": 2,
+    "todayCompleted": 10
   }
 }
 ```
 
 ---
 
-### 4.5 获取待接单列表
+### 4.4 获取待接单的订单列表
 
-**接口**: `GET /api/merchant/tasks/unassigned`
+**接口**: `GET /merchant/tasks/unassigned`
 
-**描述**: 获取所有待处理且未分配的订单
+**描述**: 获取待接单的订单列表
 
 **请求 Header**:
 ```
 x-api-key: {你的API Key}
 ```
+
+**查询参数**:
+- `page`: 页码（默认 1）
+- `limit`: 每页数量（默认 50）
+- `buildingId`: 楼栋ID（可选）
 
 **响应**:
 ```json
@@ -1128,20 +1170,45 @@ x-api-key: {你的API Key}
   "data": {
     "list": [
       {
-        "id": "20250219123456",
-        "totalAmount": 5.5,
-        "totalPages": 11,
-        // ...
+        "id": "pay12345678901234567890123456",
+        "totalPages": 10,
+        "copies": 1,
+        "paperSize": "A4",
+        "colorType": 0,
+        "doubleSided": 0,
+        "printQuality": "normal",
+        "totalAmount": 1.00,
+        "status": 1,
+        "remark": "",
+        "createdAt": "2024-01-20T10:30:00.000Z",
+        "orderFiles": [
+          {
+            "id": 1,
+            "fileId": 1,
+            "pages": 10,
+            "file": {
+              "id": 1,
+              "fileName": "test.pdf",
+              "fileExt": "pdf",
+              "totalPages": 10,
+              "convertedPdfPath": "uploads/converted/test.pdf"
+            }
+          }
+        ]
       }
     ],
-    "total": 10
+    "total": 10,
+    "page": 1,
+    "limit": 50
   }
 }
 ```
 
-### 4.6 商户接单
+---
 
-**接口**: `POST /api/merchant/tasks/:id/grab`
+### 4.5 商户接单
+
+**接口**: `POST /merchant/tasks/:id/grab`
 
 **描述**: 商户接取指定的待处理订单
 
@@ -1161,9 +1228,11 @@ x-api-key: {你的API Key}
 }
 ```
 
-### 4.7 取消接单（释放订单）
+---
 
-**接口**: `POST /api/merchant/tasks/:id/cancel`
+### 4.6 取消接单（释放订单）
+
+**接口**: `POST /merchant/tasks/:id/cancel`
 
 **描述**: 商户取消已接的订单，释放回待接单池
 
@@ -1185,11 +1254,342 @@ x-api-key: {你的API Key}
 
 ---
 
+### 4.7 获取商户的打印任务列表
+
+**接口**: `GET /merchant/tasks`
+
+**描述**: 获取商户的打印任务列表
+
+**请求 Header**:
+```
+x-api-key: {你的API Key}
+```
+
+**响应**:
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": [
+    {
+      "id": "task12345678901234567890123456",
+      "orderId": "pay12345678901234567890123456",
+      "merchantId": 1,
+      "fileId": 1,
+      "printParams": {
+        "copies": 1,
+        "colorType": 0,
+        "doubleSided": 0,
+        "paperSize": "A4",
+        "printQuality": "normal",
+        "pageRange": "1-5",
+        "remark": ""
+      },
+      "status": 2,
+      "errorMsg": null,
+      "startedAt": "2024-01-20T10:35:00.000Z",
+      "completedAt": null,
+      "createdAt": "2024-01-20T10:30:00.000Z",
+      "updatedAt": "2024-01-20T10:35:00.000Z",
+      "order": {
+        "id": "pay12345678901234567890123456",
+        "totalPages": 10,
+        "totalAmount": 1.00,
+        "status": 2
+      },
+      "file": {
+        "id": 1,
+        "fileName": "test.pdf",
+        "fileExt": "pdf",
+        "totalPages": 10,
+        "convertedPdfPath": "uploads/converted/test.pdf"
+      }
+    }
+  ]
+}
+```
+
+---
+
+### 4.8 获取待处理的打印任务
+
+**接口**: `GET /merchant/tasks/pending`
+
+**描述**: 获取待处理的打印任务
+
+**请求 Header**:
+```
+x-api-key: {你的API Key}
+```
+
+**响应**:
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": [
+    {
+      "id": "task12345678901234567890123456",
+      "orderId": "pay12345678901234567890123456",
+      "merchantId": 1,
+      "fileId": 1,
+      "printParams": {
+        "copies": 1,
+        "colorType": 0,
+        "doubleSided": 0,
+        "paperSize": "A4",
+        "printQuality": "normal"
+      },
+      "status": 2,
+      "createdAt": "2024-01-20T10:30:00.000Z",
+      "order": { ... },
+      "file": { ... }
+    }
+  ]
+}
+```
+
+---
+
+### 4.9 获取打印任务详情
+
+**接口**: `GET /merchant/tasks/:id`
+
+**描述**: 获取打印任务详情
+
+**请求 Header**:
+```
+x-api-key: {你的API Key}
+```
+
+**路径参数**:
+- `id`: 打印任务 ID
+
+**响应**:
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": "task12345678901234567890123456",
+    "orderId": "pay12345678901234567890123456",
+    "merchantId": 1,
+    "fileId": 1,
+    "printParams": {
+      "copies": 1,
+      "colorType": 0,
+      "doubleSided": 0,
+      "paperSize": "A4",
+      "printQuality": "normal",
+      "pageRange": "1-5",
+      "remark": ""
+    },
+    "status": 2,
+    "errorMsg": null,
+    "startedAt": "2024-01-20T10:35:00.000Z",
+    "completedAt": null,
+    "createdAt": "2024-01-20T10:30:00.000Z",
+    "updatedAt": "2024-01-20T10:35:00.000Z",
+    "order": {
+      "id": "pay12345678901234567890123456",
+      "userId": 1,
+      "totalPages": 10,
+      "copies": 1,
+      "totalAmount": 1.00,
+      "status": 2,
+      "remark": "",
+      "createdAt": "2024-01-20T10:30:00.000Z"
+    },
+    "file": {
+      "id": 1,
+      "fileName": "test.pdf",
+      "fileExt": "pdf",
+      "totalPages": 10,
+      "convertedPdfPath": "uploads/converted/test.pdf"
+    }
+  }
+}
+```
+
+---
+
+### 4.10 开始打印任务
+
+**接口**: `PUT /merchant/tasks/:id/start`
+
+**描述**: 开始打印任务
+
+**请求 Header**:
+```
+x-api-key: {你的API Key}
+```
+
+**路径参数**:
+- `id`: 打印任务 ID
+
+**响应**:
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": "task12345678901234567890123456",
+    "status": 2,
+    "startedAt": "2024-01-20T10:35:00.000Z"
+  }
+}
+```
+
+---
+
+### 4.11 完成打印任务
+
+**接口**: `PUT /merchant/tasks/:id/complete`
+
+**描述**: 完成打印任务
+
+**请求 Header**:
+```
+x-api-key: {你的API Key}
+```
+
+**路径参数**:
+- `id`: 打印任务 ID
+
+**响应**:
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": "task12345678901234567890123456",
+    "status": 3,
+    "completedAt": "2024-01-20T10:40:00.000Z"
+  }
+}
+```
+
+---
+
+### 4.12 强制完成打印任务并同步订单
+
+**接口**: `POST /merchant/tasks/:id/force-complete`
+
+**描述**: 强制完成打印任务并同步订单状态
+
+**请求 Header**:
+```
+x-api-key: {你的API Key}
+```
+
+**路径参数**:
+- `id`: 打印任务 ID
+
+**响应**:
+```json
+{
+  "code": 0,
+  "message": "强制完成成功"
+}
+```
+
+---
+
+### 4.13 标记打印任务失败
+
+**接口**: `PUT /merchant/tasks/:id/fail`
+
+**描述**: 标记打印任务失败
+
+**请求 Header**:
+```
+x-api-key: {你的API Key}
+```
+
+**路径参数**:
+- `id`: 打印任务 ID
+
+**请求参数**:
+```json
+{
+  "errorMsg": "打印失败原因"
+}
+```
+
+**响应**:
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": "task12345678901234567890123456",
+    "status": 4,
+    "errorMsg": "打印失败原因"
+  }
+}
+```
+
+---
+
+### 4.14 上传派送完成图片
+
+**接口**: `POST /merchant/tasks/:orderId/upload-delivery-image`
+
+**描述**: 上传派送完成图片文件
+
+**请求 Header**:
+```
+x-api-key: {你的API Key}
+```
+
+**路径参数**:
+- `orderId`: 订单 ID
+
+**请求**: `multipart/form-data`
+- `file`: 图片文件
+
+**响应**:
+```json
+{
+  "code": 0,
+  "message": "图片上传成功，订单已完成",
+  "data": {
+    "imageUrl": "http://localhost:3000/api/uploads/delivery/delivery_1234567890_abc123.jpg"
+  }
+}
+```
+
+---
+
+### 4.15 完成订单
+
+**接口**: `POST /merchant/tasks/:orderId/complete`
+
+**描述**: 完成订单
+
+**请求 Header**:
+```
+x-api-key: {你的API Key}
+```
+
+**路径参数**:
+- `orderId`: 订单 ID
+
+**响应**:
+```json
+{
+  "code": 0,
+  "message": "订单完成成功"
+}
+```
+
+---
+
 ## 五、打印任务状态
 
 | 值 | 说明 |
 |----|------|
-| 0 | 待分配（待打印） |
+| 0 | 待分配 |
 | 1 | 已分配 |
 | 2 | 打印中 |
 | 3 | 已完成 |
@@ -1197,7 +1597,21 @@ x-api-key: {你的API Key}
 
 ---
 
-## 六、下载打印文件
+## 六、订单状态
+
+| 值 | 说明 |
+|----|------|
+| 0 | 待支付 |
+| 1 | 待打印 |
+| 2 | 打印中 |
+| 3 | 已打印 |
+| 4 | 已完成 |
+| 5 | 已取消 |
+| 6 | 已失败 |
+
+---
+
+## 七、下载打印文件
 
 打印任务关联的文件可以通过文件下载接口获取：
 
@@ -1216,9 +1630,9 @@ curl -O http://localhost:3000/api/files/1/download
 
 ---
 
-## 七、完整工作流程示例
+## 八、完整工作流程示例
 
-### 7.1 商户接收打印任务流程
+### 8.1 商户接收打印任务流程
 
 ```
 1. 商户客户端定期轮询待处理任务
@@ -1237,7 +1651,7 @@ curl -O http://localhost:3000/api/files/1/download
    PUT /api/merchant/tasks/{taskId}/complete
 ```
 
-### 7.2 代码示例（Python）
+### 8.2 代码示例（Python）
 
 ```python
 import requests
@@ -1303,7 +1717,7 @@ if __name__ == "__main__":
 
 ---
 
-## 八、错误码
+## 九、错误码
 
 | HTTP 状态码 | 说明 |
 |------------|------|
@@ -1313,7 +1727,7 @@ if __name__ == "__main__":
 
 ---
 
-## 九、关键代码位置
+## 十、关键代码位置
 
 - **商户实体**：`printease-backend/src/modules/user/entities/merchant.entity.ts`
 - **商户服务**：`printease-backend/src/modules/user/user.service.ts`
