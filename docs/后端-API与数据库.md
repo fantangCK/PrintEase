@@ -125,6 +125,7 @@ USE `print_ease`;
 |--------|----------|------|--------|------|
 | id | VARCHAR(32) | PRIMARY KEY | - | 订单号（如：PE202502190001） |
 | user_id | INT | NOT NULL | - | 用户ID |
+| merchant_id | INT | NULL | NULL | 商户ID |
 | total_pages | INT | NOT NULL | - | 总页数 |
 | copies | INT | NOT NULL | 1 | 打印份数 |
 | paper_size | VARCHAR(10) | NOT NULL | 'A4' | 纸张大小（A4/A5/A3） |
@@ -157,6 +158,12 @@ USE `print_ease`;
 | order_id | VARCHAR(32) | NOT NULL | - | 订单号 |
 | file_id | INT | NOT NULL | - | 文件ID |
 | pages | INT | NOT NULL | 1 | 该文件打印页数 |
+| copies | INT | NOT NULL | 1 | 打印份数 |
+| paper_size | VARCHAR(10) | NOT NULL | 'A4' | 纸张大小 |
+| color_type | TINYINT | NOT NULL | 0 | 颜色类型 |
+| double_sided | TINYINT | NOT NULL | 0 | 双面打印 |
+| print_quality | VARCHAR(20) | NOT NULL | 'normal' | 打印质量 |
+| page_range | VARCHAR(50) | NULL | NULL | 页码范围 |
 | created_at | DATETIME | NOT NULL | CURRENT_TIMESTAMP | 创建时间 |
 
 **索引**：
@@ -237,6 +244,52 @@ USE `print_ease`;
 
 **索引**：
 - `idx_username` (username)
+
+---
+
+### 4.8 订单支付表 (order_payments)
+
+| 字段名 | 数据类型 | 约束 | 默认值 | 说明 |
+|--------|----------|------|--------|------|
+| id | INT | PRIMARY KEY AUTO_INCREMENT | - | 支付记录ID |
+| order_id | VARCHAR(32) | UNIQUE NOT NULL | - | 订单号 |
+| mpay_trade_no | VARCHAR(100) | NULL | NULL | 支付平台订单号 |
+| mpay_pay_url | VARCHAR(500) | NULL | NULL | 支付跳转链接 |
+| mpay_real_price | DECIMAL(10,2) | NULL | NULL | 实付金额 |
+| mpay_created_at | DATETIME | NULL | NULL | 支付创建时间 |
+| created_at | DATETIME | NOT NULL | CURRENT_TIMESTAMP | 创建时间 |
+| updated_at | DATETIME | NOT NULL | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
+
+**索引**：
+- `uniq_order_id_payment` (order_id)
+- `idx_order_id` (order_id)
+
+**外键关系**：
+- `order_id` → orders(id)
+
+---
+
+### 4.9 订单派送表 (order_deliveries)
+
+| 字段名 | 数据类型 | 约束 | 默认值 | 说明 |
+|--------|----------|------|--------|------|
+| id | INT | PRIMARY KEY AUTO_INCREMENT | - | 派送记录ID |
+| order_id | VARCHAR(32) | UNIQUE NOT NULL | - | 订单号 |
+| delivery_building_id | INT | NULL | NULL | 派送楼栋ID |
+| delivery_building_name | VARCHAR(100) | NULL | NULL | 派送楼栋名称 |
+| delivery_time_slot_id | INT | NULL | NULL | 时间段ID |
+| delivery_time_slot_name | VARCHAR(100) | NULL | NULL | 时间段名称 |
+| delivery_image_url | VARCHAR(500) | NULL | NULL | 投递图片路径 |
+| delivery_time | VARCHAR(50) | NULL | NULL | 约定时间段 |
+| created_at | DATETIME | NOT NULL | CURRENT_TIMESTAMP | 创建时间 |
+| updated_at | DATETIME | NOT NULL | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
+
+**索引**：
+- `uniq_order_id_delivery` (order_id)
+- `idx_order_id` (order_id)
+
+**外键关系**：
+- `order_id` → orders(id)
 
 ---
 
