@@ -440,14 +440,22 @@ npm run migration:revert
 
 ### 3.1 上传文件
 
-**接口**: `POST /files/upload`
+**接口**: `POST /files/upload?fileName={encodeURIComponent(fileName)}`
 
 **描述**: 上传文件到服务器
 
 **认证**: 需要
 
+**查询参数**:
+- `fileName`: 原始文件名（使用 encodeURIComponent 编码）
+
 **请求**: `multipart/form-data`
 - `file`: 文件
+
+**文件命名规则**:
+- 优先使用前端传递的原始文件名
+- 如果文件名已存在，自动添加数字后缀（如 `document(1).docx`）
+- 避免使用临时文件名（如 tmp_xxxx）
 
 **响应**:
 ```typescript
@@ -456,7 +464,7 @@ npm run migration:revert
   message: "success";
   data: {
     id: number;
-    fileName: string;
+    fileName: string;  // 原始文件名（可能包含数字后缀）
     fileSize: number;
     fileType: string;
     fileExt: string;
@@ -2422,3 +2430,48 @@ ADD INDEX `idx_merchant_id` (`merchant_id`);
 3. TypeORM 会自动创建所有表结构
 
 注意：在生产环境中，建议关闭 `synchronize`，使用迁移脚本。
+
+---
+
+## 十、定时任务 (Schedule)
+系统使用 `@nestjs/schedule` 实现定时任务调度。
+
+### 10.1 依赖安装
+在后端目录中执行：
+```bash
+cd PrintEase-backend
+npm install @nestjs/schedule @types/cron
+```
+
+### 10.2 定时任务配置
+定时任务服务位于 `src/modules/order/order-scheduler.service.ts`
+
+### 10.3 定时任务列表
+| 任务名称 | 执行频率 | 功能描述 |
+|---------|---------|---------|
+| `handleExpiredOrders` | 每天 01:00 | 检查并取消超过 24 小时的待支付订单 |
+| `testScheduledTask` | 每 5 分钟 | 测试任务（开发调试用） |
+
+### 10.4 订单自动取消逻辑
+1. 查询所有状态为「待支付」(status = 0) 的订单
+2. 筛选出创建时间超过 24 小时的订单
+3. 将订单状态更新为「已取消」(status = 4)
+4. 记录取消的订单数量
+
+### 10.5 模块注册
+在 `order.module.ts` 中注册：
+```typescript
+import { ScheduleModule } from '@nestjs/schedule';
+import { OrderSchedulerService } from './order-scheduler.service';
+
+@Module({
+  imports: [ScheduleModule.forRoot()],
+  providers: [OrderSchedulerService, ...],
+})
+export class OrderModule {}
+```
+
+### 10.6 支付宝支付开关
+- 系统配置中的支付宝支付开关默认开启
+- 即使配置已存在，系统也会强制设置为开启状态
+- 确保用户能正常使用支付宝支付功能
