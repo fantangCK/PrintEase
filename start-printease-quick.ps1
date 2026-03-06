@@ -13,6 +13,21 @@ $uniappDir = Join-Path $root "PrintEase-uniapp"
 $frpDir = Join-Path $root "mpay\frp"
 $mpayDir = Join-Path $root "mpay"
 
+# Check if npm is available
+function Test-NpmAvailable {
+    try {
+        $null = npm --version 2>$null
+        return $true
+    } catch {
+        return $false
+    }
+}
+
+if (-not (Test-NpmAvailable)) {
+    Write-Host "[WARNING] npm not found. Please ensure Node.js is installed."
+    Write-Host "Services that require npm may fail to start."
+}
+
 function Start-JobWindow {
     param(
         [string]$Name,
@@ -27,7 +42,8 @@ function Start-JobWindow {
         return
     }
     $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes("Set-Location -LiteralPath '$WorkingDir'; $Command"))
-    Start-Process -FilePath "pwsh" -ArgumentList @("-NoExit", "-EncodedCommand", $encoded) | Out-Null
+    # Use powershell.exe for better compatibility instead of pwsh
+    Start-Process -FilePath "powershell.exe" -ArgumentList @("-NoExit", "-EncodedCommand", $encoded) | Out-Null
     Write-Host "[OK] Started: $Name"
 }
 
@@ -89,7 +105,17 @@ if (-not $NoDocker) {
             }
         }
         
-        docker compose -f $dockerComposeFile up -d
+        # Try docker compose first, then fall back to docker-compose
+        try {
+            docker compose -f $dockerComposeFile up -d
+        } catch {
+            Write-Host "[INFO] docker compose not found, trying docker-compose..."
+            try {
+                docker-compose -f $dockerComposeFile up -d
+            } catch {
+                throw "Neither docker compose nor docker-compose found. Please ensure Docker is properly installed."
+            }
+        }
         Write-Host "[OK] Docker(mpays) started"
     }
 }
