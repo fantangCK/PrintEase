@@ -136,7 +136,7 @@ if (-not $NoFrp) {
     Start-JobWindow -Name "FRP" -WorkingDir $frpDir -Command ".\frpc.exe -c .\frpc.ini"
 }
 
-if (-not $NoUniapp) {
+if ( $NoUniapp) {
     Start-JobWindow -Name "UniApp" -WorkingDir $uniappDir -Command "if (-not (Test-Path node_modules)) { npm install }; npm run dev:mp-weixin"
 }
 
