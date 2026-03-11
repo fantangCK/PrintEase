@@ -4,3 +4,4 @@
 .codebuddy/
 .vscode/
 redis-data/
+db/
