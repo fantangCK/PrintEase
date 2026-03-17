@@ -3,5 +3,7 @@
 .idea/
 .codebuddy/
 .vscode/
+.claude/
 redis-data/
 db/
+nul
