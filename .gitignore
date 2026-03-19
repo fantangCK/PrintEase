@@ -4,6 +4,7 @@
 .codebuddy/
 .vscode/
 .claude/
+.trae/
 redis-data/
 db/
 nul
