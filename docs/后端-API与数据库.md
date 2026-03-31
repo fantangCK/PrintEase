@@ -2,7 +2,7 @@
 
 本文档集成了数据库设计、API 接口文档、商户 API 文档以及 API 和数据库的变更记录。
 
----
+***
 
 # 第一部分：数据库设计
 
@@ -13,7 +13,7 @@
 - **排序规则**：`utf8mb4_unicode_ci`
 - **数据库引擎**：InnoDB
 
----
+***
 
 ## 二、数据库初始化 SQL
 
@@ -25,273 +25,355 @@ COLLATE utf8mb4_unicode_ci;
 USE `print_ease`;
 ```
 
----
+***
 
 ## 三、枚举值定义
 
 ### 3.1 订单状态 (order_status)
-| 值 | 说明 |
-|----|------|
+
+| 值 | 说明  |
+| - | --- |
 | 0 | 待支付 |
-| 1 | 待打印 |
+| 1 | 待打印/待接单 |
 | 2 | 打印中 |
-| 3 | 已完成 |
-| 4 | 已取消 |
-| 5 | 已失败 |
+| 3 | 已打印 |
+| 4 | 已完成 |
+| 5 | 已取消 |
+| 6 | 已失败 |
 
 ### 3.2 打印任务状态 (print_task_status)
-| 值 | 说明 |
-|----|------|
+
+| 值 | 说明  |
+| - | --- |
 | 0 | 待分配 |
 | 1 | 已分配 |
-| 2 | 打印中 |
-| 3 | 已完成 |
-| 4 | 已失败 |
+| 2 | 已接单 |
+| 3 | 打印中 |
+| 4 | 已完成 |
+| 5 | 已失败 |
+| 6 | 已取消 |
 
 ### 3.3 节点状态 (node_status)
+
 | 值 | 说明 |
-|----|------|
+| - | -- |
 | 0 | 离线 |
 | 1 | 在线 |
 
 ### 3.4 颜色类型 (color_type)
+
 | 值 | 说明 |
-|----|------|
+| - | -- |
 | 0 | 黑白 |
 | 1 | 彩色 |
 
 ### 3.5 双面打印 (double_sided)
-| 值 | 说明 |
-|----|------|
-| 0 | 单面 |
+
+| 值 | 说明   |
+| - | ---- |
+| 0 | 单面   |
 | 1 | 长边翻转 |
 | 2 | 短边翻转 |
 
 ### 3.6 管理员角色 (admin_role)
-| 值 | 说明 |
-|----|------|
+
+| 值 | 说明    |
+| - | ----- |
 | 0 | 超级管理员 |
 | 1 | 普通管理员 |
 
----
+### 3.7 文件转换状态 (conversion_status)
+
+| 值 | 说明 |
+| - | -- |
+| pending | 等待转换 |
+| converting | 转换中 |
+| completed | 转换完成 |
+| failed | 转换失败 |
+
+***
 
 ## 四、数据表设计
 
 ### 4.1 用户表 (users)
 
-| 字段名 | 数据类型 | 约束 | 默认值 | 说明 |
-|--------|----------|------|--------|------|
-| id | INT | PRIMARY KEY AUTO_INCREMENT | - | 用户ID |
-| openid | VARCHAR(100) | UNIQUE NOT NULL | - | 微信OpenID |
-| nickname | VARCHAR(50) | NULL | NULL | 昵称 |
-| avatar | VARCHAR(255) | NULL | NULL | 头像URL |
-| phone | VARCHAR(20) | NULL | NULL | 手机号 |
-| created_at | DATETIME | NOT NULL | CURRENT_TIMESTAMP | 创建时间 |
-| updated_at | DATETIME | NOT NULL | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
+| 字段名         | 数据类型         | 约束                          | 默认值                                             | 说明       |
+| ----------- | ------------ | --------------------------- | ----------------------------------------------- | -------- |
+| id          | INT          | PRIMARY KEY AUTO\_INCREMENT | -                                               | 用户ID     |
+| openid      | VARCHAR(100) | UNIQUE NOT NULL             | -                                               | 微信OpenID |
+| nickname    | VARCHAR(50)  | NULL                        | NULL                                            | 昵称       |
+| avatar      | VARCHAR(255) | NULL                        | NULL                                            | 头像URL    |
+| phone       | VARCHAR(20)  | NULL                        | NULL                                            | 手机号      |
+| created\_at | DATETIME     | NOT NULL                    | CURRENT\_TIMESTAMP                              | 创建时间     |
+| updated\_at | DATETIME     | NOT NULL                    | CURRENT\_TIMESTAMP ON UPDATE CURRENT\_TIMESTAMP | 更新时间     |
 
 **索引**：
+
 - `idx_openid` (openid)
 
----
+***
 
 ### 4.2 文件表 (files)
 
-| 字段名 | 数据类型 | 约束 | 默认值 | 说明 |
-|--------|----------|------|--------|------|
-| id | INT | PRIMARY KEY AUTO_INCREMENT | - | 文件ID |
-| user_id | INT | NOT NULL | - | 上传用户ID |
-| file_name | VARCHAR(255) | NOT NULL | - | 原始文件名 |
-| file_path | VARCHAR(255) | NOT NULL | - | 文件存储路径 |
-| file_size | BIGINT | NOT NULL | - | 文件大小（字节） |
-| file_type | VARCHAR(50) | NOT NULL | - | 文件MIME类型 |
-| file_ext | VARCHAR(20) | NOT NULL | - | 文件扩展名 |
-| preview_path | VARCHAR(255) | NULL | NULL | 预览图路径 |
-| total_pages | INT | NULL | NULL | 总页数（PDF/DOC等） |
-| created_at | DATETIME | NOT NULL | CURRENT_TIMESTAMP | 创建时间 |
-| deleted_at | DATETIME | NULL | NULL | 删除时间（软删除） |
+| 字段名           | 数据类型         | 约束                          | 默认值                | 说明            |
+| ------------- | ------------ | --------------------------- | ------------------ | ------------- |
+| id            | INT          | PRIMARY KEY AUTO\_INCREMENT | -                  | 文件ID          |
+| user\_id      | INT          | NOT NULL                    | -                  | 上传用户ID        |
+| file\_name    | VARCHAR(255) | NOT NULL                    | -                  | 原始文件名         |
+| file\_path    | VARCHAR(255) | NOT NULL                    | -                  | 文件存储路径        |
+| file\_size    | BIGINT       | NOT NULL                    | -                  | 文件大小（字节）      |
+| file\_type    | VARCHAR(50)  | NOT NULL                    | -                  | 文件MIME类型      |
+| file\_ext     | VARCHAR(20)  | NOT NULL                    | -                  | 文件扩展名         |
+| preview\_path | VARCHAR(255) | NULL                        | NULL               | 预览图路径         |
+| total\_pages  | INT          | NULL                        | NULL               | 总页数（PDF/DOC等） |
+| created\_at   | DATETIME     | NOT NULL                    | CURRENT\_TIMESTAMP | 创建时间          |
+| deleted\_at   | DATETIME     | NULL                        | NULL               | 删除时间（软删除）     |
 
 **索引**：
-- `idx_user_id` (user_id)
-- `idx_created_at` (created_at)
+
+- `idx_user_id` (user\_id)
+- `idx_created_at` (created\_at)
 
 **外键**：
-- `fk_files_user` (user_id) → users(id)
 
----
+- `fk_files_user` (user\_id) → users(id)
+
+***
 
 ### 4.3 订单表 (orders)
 
-| 字段名 | 数据类型 | 约束 | 默认值 | 说明 |
-|--------|----------|------|--------|------|
-| id | VARCHAR(32) | PRIMARY KEY | - | 订单号（如：PE202502190001） |
-| user_id | INT | NOT NULL | - | 用户ID |
-| merchant_id | INT | NULL | NULL | 商户ID |
-| total_pages | INT | NOT NULL | - | 总页数 |
-| copies | INT | NOT NULL | 1 | 打印份数 |
-| paper_size | VARCHAR(10) | NOT NULL | 'A4' | 纸张大小（A4/A5/A3） |
-| color_type | TINYINT | NOT NULL | 0 | 颜色类型（0:黑白, 1:彩色） |
-| double_sided | TINYINT | NOT NULL | 0 | 双面打印（0:单面, 1:长边, 2:短边） |
-| page_range | VARCHAR(50) | NULL | NULL | 打印页码范围（如 "1-5, 8"） |
-| print_quality | VARCHAR(20) | NOT NULL | 'normal' | 打印质量（draft/normal/high） |
-| total_amount | DECIMAL(10,2) | NOT NULL | 0.00 | 总金额（元） |
-| status | TINYINT | NOT NULL | 0 | 订单状态（见枚举） |
-| print_time | DATETIME | NULL | NULL | 打印完成时间 |
-| remark | VARCHAR(500) | NULL | NULL | 备注 |
-| created_at | DATETIME | NOT NULL | CURRENT_TIMESTAMP | 创建时间 |
-| updated_at | DATETIME | NOT NULL | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
+| 字段名            | 数据类型          | 约束          | 默认值                                             | 说明                      |
+| -------------- | ------------- | ----------- | ----------------------------------------------- | ----------------------- |
+| id             | VARCHAR(32)   | PRIMARY KEY | -                                               | 订单号（如：PE202502190001）   |
+| user_id       | INT           | NOT NULL    | -                                               | 用户ID                    |
+| merchant_id   | INT           | NULL        | NULL                                            | 商户ID                    |
+| total_pages   | INT           | NOT NULL    | -                                               | 总页数                     |
+| copies         | INT           | NOT NULL    | 1                                               | 打印份数                    |
+| paper_size    | VARCHAR(10)   | NULL        | 'A4'                                            | 纸张大小（A4/A5/A3）- 保留字段用于兼容 |
+| color_type    | TINYINT       | NULL        | 0                                               | 颜色类型（0:黑白, 1:彩色）- 保留字段用于兼容 |
+| double_sided  | TINYINT       | NULL        | 0                                               | 双面打印（0:单面, 1:长边, 2:短边）- 保留字段用于兼容 |
+| page_range    | VARCHAR(50)   | NULL        | NULL                                            | 打印页码范围（如 "1-5, 8"）- 保留字段用于兼容 |
+| print_quality | VARCHAR(20)   | NULL        | 'normal'                                        | 打印质量（draft/normal/high）- 保留字段用于兼容 |
+| total_amount  | DECIMAL(10,2) | NOT NULL    | 0.00                                            | 总金额（元）                  |
+| status         | TINYINT       | NOT NULL    | 0                                               | 订单状态（见枚举）               |
+| print_time    | DATETIME      | NULL        | NULL                                            | 打印完成时间                  |
+| remark         | VARCHAR(500)  | NULL        | NULL                                            | 备注                      |
+| created_at    | DATETIME      | NOT NULL    | CURRENT_TIMESTAMP                              | 创建时间                    |
+| updated_at    | DATETIME      | NOT NULL    | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间                    |
+| deleted_at    | DATETIME      | NULL        | NULL                                            | 删除时间（软删除）              |
+
+**重要说明**：
+- 订单级打印参数已移至 OrderFile 表，每个文件可以有独立的打印参数
+- 保留以上字段为兼容旧数据，新订单不再使用这些字段
 
 **索引**：
+
 - `idx_user_id` (user_id)
+- `idx_merchant_id` (merchant_id)
 - `idx_status` (status)
 - `idx_created_at` (created_at)
 
 **外键**：
-- `fk_orders_user` (user_id) → users(id)
 
----
+- `fk_orders_user` (user_id) → users(id)
+- `fk_orders_merchant` (merchant_id) → merchants(id)
+
+***
 
 ### 4.4 订单文件关联表 (order_files)
 
-| 字段名 | 数据类型 | 约束 | 默认值 | 说明 |
-|--------|----------|------|--------|------|
-| id | INT | PRIMARY KEY AUTO_INCREMENT | - | 关联ID |
-| order_id | VARCHAR(32) | NOT NULL | - | 订单号 |
-| file_id | INT | NOT NULL | - | 文件ID |
-| pages | INT | NOT NULL | 1 | 该文件打印页数 |
-| copies | INT | NOT NULL | 1 | 打印份数 |
-| paper_size | VARCHAR(10) | NOT NULL | 'A4' | 纸张大小 |
-| color_type | TINYINT | NOT NULL | 0 | 颜色类型 |
-| double_sided | TINYINT | NOT NULL | 0 | 双面打印 |
-| print_quality | VARCHAR(20) | NOT NULL | 'normal' | 打印质量 |
-| page_range | VARCHAR(50) | NULL | NULL | 页码范围 |
-| created_at | DATETIME | NOT NULL | CURRENT_TIMESTAMP | 创建时间 |
+| 字段名            | 数据类型        | 约束                          | 默认值                | 说明      |
+| -------------- | ----------- | --------------------------- | ------------------ | ------- |
+| id             | INT         | PRIMARY KEY AUTO_INCREMENT | -                  | 关联ID    |
+| order_id      | VARCHAR(32) | NOT NULL                    | -                  | 订单号     |
+| file_id       | INT         | NOT NULL                    | -                  | 文件ID    |
+| pages          | INT         | NOT NULL                    | 1                  | 该文件打印页数 |
+| copies         | INT         | NOT NULL                    | 1                  | 打印份数    |
+| paper_size    | VARCHAR(10) | NULL                        | NULL               | 纸张大小    |
+| color_type    | TINYINT     | NULL                        | NULL               | 颜色类型    |
+| double_sided  | TINYINT     | NULL                        | NULL               | 双面打印    |
+| print_quality | VARCHAR(20) | NULL                        | NULL               | 打印质量    |
+| page_range    | VARCHAR(50) | NULL                        | NULL               | 页码范围    |
+| created_at    | DATETIME    | NOT NULL                    | CURRENT_TIMESTAMP | 创建时间    |
 
 **索引**：
+
 - `idx_order_id` (order_id)
 - `idx_file_id` (file_id)
 
 **外键**：
+
 - `fk_order_files_order` (order_id) → orders(id)
 - `fk_order_files_file` (file_id) → files(id)
 
----
+***
 
-### 4.5 云印调度节点表 (dispatch_nodes)
+### 4.5 商户表 (merchants)
 
-| 字段名 | 数据类型 | 约束 | 默认值 | 说明 |
-|--------|----------|------|--------|------|
-| id | INT | PRIMARY KEY AUTO_INCREMENT | - | 节点ID |
-| node_name | VARCHAR(100) | NOT NULL | - | 节点名称 |
-| node_key | VARCHAR(100) | UNIQUE NOT NULL | - | 节点认证密钥 |
-| status | TINYINT | NOT NULL | 0 | 节点状态（0:离线, 1:在线） |
-| os_type | VARCHAR(20) | NULL | NULL | 操作系统类型（windows/linux/macos） |
-| arch | VARCHAR(20) | NULL | NULL | 架构（x86_64/arm64等） |
-| printers | JSON | NULL | NULL | 可用打印机列表 |
-| ip_address | VARCHAR(50) | NULL | NULL | IP地址 |
-| last_heartbeat | DATETIME | NULL | NULL | 最后心跳时间 |
-| created_at | DATETIME | NOT NULL | CURRENT_TIMESTAMP | 创建时间 |
-| updated_at | DATETIME | NOT NULL | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
+| 字段名         | 数据类型         | 约束                          | 默认值                                             | 说明                   |
+| ----------- | ------------ | --------------------------- | ----------------------------------------------- | -------------------- |
+| id          | INT          | PRIMARY KEY AUTO_INCREMENT | -                                               | 商户ID                 |
+| name        | VARCHAR(100) | NOT NULL                    | -                                               | 商户名称                 |
+| phone       | VARCHAR(20)  | UNIQUE NOT NULL             | -                                               | 手机号                  |
+| password    | VARCHAR(255) | NULL                        | NULL                                            | 密码（加密）               |
+| address     | VARCHAR(255) | NULL                        | NULL                                            | 地址                   |
+| building_ids | VARCHAR(255) | NULL                        | NULL                                            | 负责的楼栋ID列表（逗号分隔）       |
+| api_key     | VARCHAR(100) | UNIQUE NULL                 | NULL                                            | API密钥（唯一）            |
+| status      | TINYINT      | NOT NULL                    | 1                                               | 状态（0:禁用, 1:启用）       |
+| openid      | VARCHAR(100) | UNIQUE NULL                 | NULL                                            | 微信OpenID（唯一）         |
+| created_at  | DATETIME     | NOT NULL                    | CURRENT_TIMESTAMP                              | 创建时间                 |
+| updated_at  | DATETIME     | NOT NULL                    | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间                 |
 
 **索引**：
-- `idx_node_key` (node_key)
+
+- `idx_phone` (phone)
+- `idx_api_key` (api_key)
+- `idx_openid` (openid)
+
+***
+
+### 4.6 云印调度节点表 (dispatch_nodes)
+
+| 字段名             | 数据类型         | 约束                          | 默认值                                             | 说明                          |
+| --------------- | ------------ | --------------------------- | ----------------------------------------------- | --------------------------- |
+| id              | INT          | PRIMARY KEY AUTO\_INCREMENT | -                                               | 节点ID                        |
+| node\_name      | VARCHAR(100) | NOT NULL                    | -                                               | 节点名称                        |
+| node\_key       | VARCHAR(100) | UNIQUE NOT NULL             | -                                               | 节点认证密钥                      |
+| status          | TINYINT      | NOT NULL                    | 0                                               | 节点状态（0:离线, 1:在线）            |
+| os\_type        | VARCHAR(20)  | NULL                        | NULL                                            | 操作系统类型（windows/linux/macos） |
+| arch            | VARCHAR(20)  | NULL                        | NULL                                            | 架构（x86\_64/arm64等）          |
+| printers        | JSON         | NULL                        | NULL                                            | 可用打印机列表                     |
+| ip\_address     | VARCHAR(50)  | NULL                        | NULL                                            | IP地址                        |
+| last\_heartbeat | DATETIME     | NULL                        | NULL                                            | 最后心跳时间                      |
+| created\_at     | DATETIME     | NOT NULL                    | CURRENT\_TIMESTAMP                              | 创建时间                        |
+| updated\_at     | DATETIME     | NOT NULL                    | CURRENT\_TIMESTAMP ON UPDATE CURRENT\_TIMESTAMP | 更新时间                        |
+
+**索引**：
+
+- `idx_node_key` (node\_key)
 - `idx_status` (status)
-- `idx_last_heartbeat` (last_heartbeat)
+- `idx_last_heartbeat` (last\_heartbeat)
 
----
+***
 
-### 4.6 打印任务表 (print_tasks)
+### 4.7 打印任务表 (print_tasks)
 
-| 字段名 | 数据类型 | 约束 | 默认值 | 说明 |
-|--------|----------|------|--------|------|
-| id | VARCHAR(32) | PRIMARY KEY | - | 任务ID |
-| order_id | VARCHAR(32) | NOT NULL | - | 订单号 |
-| node_id | INT | NULL | NULL | 分配的节点ID |
-| file_id | INT | NOT NULL | - | 文件ID |
-| print_params | JSON | NOT NULL | - | 打印参数（完整JSON） |
-| status | TINYINT | NOT NULL | 0 | 任务状态（见枚举） |
-| error_msg | TEXT | NULL | NULL | 错误信息 |
-| started_at | DATETIME | NULL | NULL | 开始打印时间 |
-| completed_at | DATETIME | NULL | NULL | 完成时间 |
-| created_at | DATETIME | NOT NULL | CURRENT_TIMESTAMP | 创建时间 |
-| updated_at | DATETIME | NOT NULL | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
+| 字段名           | 数据类型        | 约束          | 默认值                                             | 说明           |
+| ------------- | ----------- | ----------- | ----------------------------------------------- | ------------ |
+| id            | VARCHAR(32) | PRIMARY KEY | -                                               | 任务ID         |
+| order_id     | VARCHAR(32) | NOT NULL    | -                                               | 订单号          |
+| node_id      | INT         | NULL        | NULL                                            | 分配的节点ID      |
+| merchant_id  | INT         | NULL        | NULL                                            | 商户ID         |
+| file_id      | INT         | NOT NULL    | -                                               | 文件ID         |
+| print_params | JSON        | NOT NULL    | -                                               | 打印参数（完整JSON） |
+| status        | TINYINT     | NOT NULL    | 0                                               | 任务状态（见枚举）    |
+| error_msg    | TEXT        | NULL        | NULL                                            | 错误信息         |
+| started_at   | DATETIME    | NULL        | NULL                                            | 开始打印时间       |
+| completed_at | DATETIME    | NULL        | NULL                                            | 完成时间         |
+| created_at   | DATETIME    | NOT NULL    | CURRENT_TIMESTAMP                              | 创建时间         |
+| updated_at   | DATETIME    | NOT NULL    | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间         |
 
 **索引**：
+
 - `idx_order_id` (order_id)
 - `idx_node_id` (node_id)
+- `idx_merchant_id` (merchant_id)
 - `idx_status` (status)
 - `idx_created_at` (created_at)
 
 **外键**：
+
 - `fk_print_tasks_order` (order_id) → orders(id)
 - `fk_print_tasks_node` (node_id) → dispatch_nodes(id)
+- `fk_print_tasks_merchant` (merchant_id) → merchants(id)
 - `fk_print_tasks_file` (file_id) → files(id)
 
----
+***
 
-### 4.7 管理员表 (admins)
+### 4.8 管理员表 (admins)
 
-| 字段名 | 数据类型 | 约束 | 默认值 | 说明 |
-|--------|----------|------|--------|------|
-| id | INT | PRIMARY KEY AUTO_INCREMENT | - | 管理员ID |
-| username | VARCHAR(50) | UNIQUE NOT NULL | - | 用户名 |
-| password | VARCHAR(255) | NOT NULL | - | 密码（bcrypt加密） |
-| real_name | VARCHAR(50) | NULL | NULL | 真实姓名 |
-| role | TINYINT | NOT NULL | 1 | 角色（0:超级管理员, 1:普通管理员） |
-| last_login_at | DATETIME | NULL | NULL | 最后登录时间 |
-| last_login_ip | VARCHAR(50) | NULL | NULL | 最后登录IP |
-| created_at | DATETIME | NOT NULL | CURRENT_TIMESTAMP | 创建时间 |
-| updated_at | DATETIME | NOT NULL | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
+| 字段名             | 数据类型         | 约束                          | 默认值                                             | 说明                   |
+| --------------- | ------------ | --------------------------- | ----------------------------------------------- | -------------------- |
+| id              | INT          | PRIMARY KEY AUTO\_INCREMENT | -                                               | 管理员ID                |
+| username        | VARCHAR(50)  | UNIQUE NOT NULL             | -                                               | 用户名                  |
+| password        | VARCHAR(255) | NOT NULL                    | -                                               | 密码（bcrypt加密）         |
+| real\_name      | VARCHAR(50)  | NULL                        | NULL                                            | 真实姓名                 |
+| role            | TINYINT      | NOT NULL                    | 1                                               | 角色（0:超级管理员, 1:普通管理员） |
+| last\_login\_at | DATETIME     | NULL                        | NULL                                            | 最后登录时间               |
+| last\_login\_ip | VARCHAR(50)  | NULL                        | NULL                                            | 最后登录IP               |
+| created\_at     | DATETIME     | NOT NULL                    | CURRENT\_TIMESTAMP                              | 创建时间                 |
+| updated\_at     | DATETIME     | NOT NULL                    | CURRENT\_TIMESTAMP ON UPDATE CURRENT\_TIMESTAMP | 更新时间                 |
 
 **索引**：
+
 - `idx_username` (username)
 
----
+***
 
-### 4.8 订单支付表 (order_payments)
+### 4.9 订单支付表 (order_payments)
 
-| 字段名 | 数据类型 | 约束 | 默认值 | 说明 |
-|--------|----------|------|--------|------|
-| id | INT | PRIMARY KEY AUTO_INCREMENT | - | 支付记录ID |
-| order_id | VARCHAR(32) | UNIQUE NOT NULL | - | 订单号 |
-| mpay_trade_no | VARCHAR(100) | NULL | NULL | 支付平台订单号 |
-| mpay_pay_url | VARCHAR(500) | NULL | NULL | 支付跳转链接 |
-| mpay_real_price | DECIMAL(10,2) | NULL | NULL | 实付金额 |
-| mpay_created_at | DATETIME | NULL | NULL | 支付创建时间 |
-| created_at | DATETIME | NOT NULL | CURRENT_TIMESTAMP | 创建时间 |
-| updated_at | DATETIME | NOT NULL | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
+| 字段名               | 数据类型          | 约束                          | 默认值                                             | 说明      |
+| ----------------- | ------------- | --------------------------- | ----------------------------------------------- | ------- |
+| id                | INT           | PRIMARY KEY AUTO_INCREMENT | -                                               | 支付记录ID  |
+| order_id         | VARCHAR(32)   | NOT NULL                    | -                                               | 订单号     |
+| mpay_trade_no   | VARCHAR(100)  | NULL                        | NULL                                            | 支付平台订单号 |
+| mpay_pay_url    | VARCHAR(500)  | NULL                        | NULL                                            | 支付跳转链接  |
+| mpay_real_price | DECIMAL(10,2) | NULL                        | NULL                                            | 实付金额    |
+| mpay_created_at | DATETIME      | NULL                        | NULL                                            | 支付创建时间  |
+| created_at       | DATETIME      | NOT NULL                    | CURRENT_TIMESTAMP                              | 创建时间    |
+| updated_at       | DATETIME      | NOT NULL                    | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间    |
 
 **索引**：
-- `uniq_order_id_payment` (order_id)
+
 - `idx_order_id` (order_id)
 
 **外键关系**：
+
 - `order_id` → orders(id)
 
----
+***
 
-### 4.9 订单派送表 (order_deliveries)
+### 4.10 订单派送表 (order_deliveries)
 
-| 字段名 | 数据类型 | 约束 | 默认值 | 说明 |
-|--------|----------|------|--------|------|
-| id | INT | PRIMARY KEY AUTO_INCREMENT | - | 派送记录ID |
-| order_id | VARCHAR(32) | UNIQUE NOT NULL | - | 订单号 |
-| delivery_building_id | INT | NULL | NULL | 派送楼栋ID |
-| delivery_building_name | VARCHAR(100) | NULL | NULL | 派送楼栋名称 |
-| delivery_time_slot_id | INT | NULL | NULL | 时间段ID |
-| delivery_time_slot_name | VARCHAR(100) | NULL | NULL | 时间段名称 |
-| delivery_image_url | VARCHAR(500) | NULL | NULL | 投递图片路径 |
-| delivery_time | VARCHAR(50) | NULL | NULL | 约定时间段 |
-| created_at | DATETIME | NOT NULL | CURRENT_TIMESTAMP | 创建时间 |
-| updated_at | DATETIME | NOT NULL | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
+| 字段名                        | 数据类型         | 约束                          | 默认值                                             | 说明     |
+| -------------------------- | ------------ | --------------------------- | ----------------------------------------------- | ------ |
+| id                         | INT          | PRIMARY KEY AUTO_INCREMENT | -                                               | 派送记录ID |
+| order_id                  | VARCHAR(32)  | NOT NULL                    | -                                               | 订单号    |
+| delivery_building_id     | INT          | NULL                        | NULL                                            | 派送楼栋ID |
+| delivery_building_name   | VARCHAR(100) | NULL                        | NULL                                            | 派送楼栋名称 |
+| delivery_time_slot_id   | INT          | NULL                        | NULL                                            | 时间段ID  |
+| delivery_time_slot_name | VARCHAR(100) | NULL                        | NULL                                            | 时间段名称  |
+| delivery_image_url       | VARCHAR(500) | NULL                        | NULL                                            | 投递图片路径 |
+| delivery_description     | VARCHAR(500) | NULL                        | NULL                                            | 配送描述    |
+| delivered_at             | DATETIME     | NULL                        | NULL                                            | 配送完成时间  |
+| created_at                | DATETIME     | NOT NULL                    | CURRENT_TIMESTAMP                              | 创建时间   |
+| updated_at                | DATETIME     | NOT NULL                    | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间   |
 
 **索引**：
-- `uniq_order_id_delivery` (order_id)
+
 - `idx_order_id` (order_id)
 
 **外键关系**：
+
 - `order_id` → orders(id)
 
----
+***
+
+### 4.11 价格配置表 (price_configs)
+
+| 字段名                           | 数据类型          | 约束                          | 默认值                                             | 说明          |
+| ----------------------------- | ------------- | --------------------------- | ----------------------------------------------- | ----------- |
+| id                            | INT           | PRIMARY KEY AUTO_INCREMENT | -                                               | 配置ID        |
+| black_white_single_sided_price | DECIMAL(10,2) | NOT NULL                    | 0.1                                             | 黑白单面价格/页    |
+| black_white_double_sided_price | DECIMAL(10,2) | NOT NULL                    | 0.08                                            | 黑白双面价格/页    |
+| color_single_sided_price       | DECIMAL(10,2) | NOT NULL                    | 0.5                                             | 彩色单面价格/页    |
+| color_double_sided_price       | DECIMAL(10,2) | NOT NULL                    | 0.4                                             | 彩色双面价格/页    |
+| min_price                     | DECIMAL(10,2) | NOT NULL                    | 1.0                                             | 最低消费        |
+| is_active                     | TINYINT       | NOT NULL                    | 1                                               | 是否激活        |
+| created_at                    | DATETIME      | NOT NULL                    | CURRENT_TIMESTAMP                              | 创建时间        |
+| updated_at                    | DATETIME      | NOT NULL                    | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间        |
+
+***
 
 ## 五、Seed 数据（初始数据）
 
@@ -302,7 +384,7 @@ INSERT INTO admins (username, password, real_name, role)
 VALUES ('admin', '$2b$12$YourHashedPasswordHere', '超级管理员', 0);
 ```
 
----
+***
 
 ## 六、数据库连接配置
 
@@ -337,7 +419,7 @@ export default () => ({
 });
 ```
 
----
+***
 
 ## 七、数据库迁移（TypeORM）
 
@@ -354,7 +436,7 @@ npm run migration:run
 npm run migration:revert
 ```
 
----
+***
 
 # 第二部分：API 文档
 
@@ -366,7 +448,7 @@ npm run migration:revert
 
 **认证方式**: JWT Bearer Token
 
----
+***
 
 ## 二、认证模块
 
@@ -377,6 +459,7 @@ npm run migration:revert
 **描述**: 使用微信 code 登录或注册
 
 **请求参数**:
+
 ```typescript
 {
   code: string;  // 微信登录 code
@@ -384,6 +467,7 @@ npm run migration:revert
 ```
 
 **响应**:
+
 ```typescript
 {
   code: 0;
@@ -407,6 +491,7 @@ npm run migration:revert
 **描述**: 商户使用手机号和密码登录
 
 **请求参数**:
+
 ```typescript
 {
   phone: string;      // 手机号
@@ -415,6 +500,7 @@ npm run migration:revert
 ```
 
 **响应**:
+
 ```typescript
 {
   code: 0;
@@ -434,7 +520,7 @@ npm run migration:revert
 }
 ```
 
----
+***
 
 ## 三、文件模块
 
@@ -447,17 +533,21 @@ npm run migration:revert
 **认证**: 需要
 
 **查询参数**:
+
 - `fileName`: 原始文件名（使用 encodeURIComponent 编码）
 
 **请求**: `multipart/form-data`
+
 - `file`: 文件
 
 **文件命名规则**:
+
 - 优先使用前端传递的原始文件名
 - 如果文件名已存在，自动添加数字后缀（如 `document(1).docx`）
-- 避免使用临时文件名（如 tmp_xxxx）
+- 避免使用临时文件名（如 tmp\_xxxx）
 
 **响应**:
+
 ```typescript
 {
   code: 0;
@@ -483,6 +573,7 @@ npm run migration:revert
 **认证**: 需要
 
 **响应**:
+
 ```typescript
 {
   code: 200;
@@ -526,10 +617,12 @@ npm run migration:revert
 **认证**: 需要
 
 **查询参数**:
+
 - `page`: 页码（默认 1）
 - `limit`: 每页数量（默认 20）
 
 **响应**:
+
 ```typescript
 {
   code: 200;
@@ -555,7 +648,7 @@ npm run migration:revert
 }
 ```
 
----
+***
 
 ## 四、订单模块
 
@@ -568,6 +661,7 @@ npm run migration:revert
 **认证**: 需要
 
 **请求参数**:
+
 ```typescript
 {
   files: Array<{ fileId: number; pages?: number }>; // 文件 ID 和页数列表
@@ -587,6 +681,7 @@ npm run migration:revert
 ```
 
 **响应**:
+
 ```typescript
 {
   code: 0;
@@ -637,11 +732,13 @@ npm run migration:revert
 **认证**: 需要
 
 **查询参数**:
+
 - `page`: 页码（默认 1）
 - `limit`: 每页数量（默认 20）
 - `status?: number`: 订单状态筛选（可选）
 
 **响应**:
+
 ```typescript
 {
   code: 200;
@@ -695,6 +792,7 @@ npm run migration:revert
 **认证**: 需要
 
 **响应**:
+
 ```typescript
 {
   code: 200;
@@ -758,6 +856,7 @@ npm run migration:revert
 **认证**: 需要
 
 **响应**:
+
 ```typescript
 {
   code: 200;
@@ -778,6 +877,7 @@ npm run migration:revert
 **认证**: 需要
 
 **响应**:
+
 ```typescript
 {
   code: 0;
@@ -799,6 +899,7 @@ npm run migration:revert
 **认证**: 需要
 
 **响应**:
+
 ```typescript
 {
   code: 0;
@@ -825,7 +926,7 @@ npm run migration:revert
 }
 ```
 
----
+***
 
 ## 五、系统模块
 
@@ -838,6 +939,7 @@ npm run migration:revert
 **认证**: 不需要
 
 **响应**:
+
 ```typescript
 {
   code: 200;
@@ -863,6 +965,7 @@ npm run migration:revert
 **认证**: 不需要
 
 **响应**:
+
 ```typescript
 {
   code: 200;
@@ -886,6 +989,7 @@ npm run migration:revert
 **认证**: 需要（管理员）
 
 **请求参数**:
+
 ```typescript
 {
   blackWhiteSingleSidedPrice?: number;
@@ -897,6 +1001,7 @@ npm run migration:revert
 ```
 
 **响应**:
+
 ```typescript
 {
   code: 200;
@@ -922,6 +1027,7 @@ npm run migration:revert
 **认证**: 需要（管理员）
 
 **请求参数**:
+
 ```typescript
 {
   title?: string;
@@ -932,6 +1038,7 @@ npm run migration:revert
 ```
 
 **响应**:
+
 ```typescript
 {
   code: 200;
@@ -946,7 +1053,7 @@ npm run migration:revert
 }
 ```
 
----
+***
 
 ## 六、管理员模块
 
@@ -957,6 +1064,7 @@ npm run migration:revert
 **描述**: 管理员登录
 
 **请求参数**:
+
 ```typescript
 {
   username: string;
@@ -965,6 +1073,7 @@ npm run migration:revert
 ```
 
 **响应**:
+
 ```typescript
 {
   code: 0;
@@ -990,13 +1099,14 @@ npm run migration:revert
 **认证**: 需要（管理员）
 
 **查询参数**:
+
 - `page`: 页码（默认 1）
 - `limit`: 每页数量（默认 20）
 - `status?: number`: 订单状态筛选（可选）
 
 **响应**: 同 4.2 获取订单列表
 
----
+***
 
 ## 七、错误响应格式
 
@@ -1011,13 +1121,14 @@ npm run migration:revert
 ```
 
 **常见错误码**:
+
 - `400`: 请求参数错误
 - `401`: 未认证
 - `403`: 无权限
 - `404`: 资源不存在
 - `500`: 服务器内部错误
 
----
+***
 
 ## 八、文件下载 URL 格式
 
@@ -1028,28 +1139,31 @@ http://localhost:3000/api/files/{id}/download
 ```
 
 **注意**:
+
 - URL 必须包含 `/api` 前缀
 - 协议必须是 `http` 或 `https`
 - 下载接口不需要认证
 
----
+***
 
 ## 九、关键代码位置
 
 ### 9.1 后端控制器
+
 - 认证控制器：`printease-backend/src/modules/auth/auth.controller.ts`
 - 文件控制器：`printease-backend/src/modules/file/file.controller.ts`
 - 订单控制器：`printease-backend/src/modules/order/order.controller.ts`
 - 系统控制器：`printease-backend/src/modules/system/system.controller.ts`
 
 ### 9.2 前端 API 封装
+
 - API 文件：`printease-uniapp/src/api/`
   - `auth.ts` - 认证相关
   - `file.ts` - 文件相关
   - `order.ts` - 订单相关
   - `system.ts` - 系统相关
 
----
+***
 
 # 第三部分：商户 API 文档
 
@@ -1057,7 +1171,7 @@ http://localhost:3000/api/files/{id}/download
 
 本文档介绍 PrintEase 商户如何使用 API Key 接收和管理打印任务。
 
----
+***
 
 ## 二、商户 API Key
 
@@ -1066,6 +1180,7 @@ http://localhost:3000/api/files/{id}/download
 每个商户都有一个唯一的 API Key，用于身份认证。
 
 **获取方式**:
+
 1. 登录管理员后台
 2. 进入商户管理页面
 3. 查看商户详情即可看到 API Key
@@ -1077,6 +1192,7 @@ http://localhost:3000/api/files/{id}/download
 **接口**: `POST /api/user/merchants/:id/regenerate-api-key`
 
 **响应**:
+
 ```json
 {
   "code": 0,
@@ -1088,7 +1204,7 @@ http://localhost:3000/api/files/{id}/download
 }
 ```
 
----
+***
 
 ## 三、认证方式
 
@@ -1099,12 +1215,13 @@ x-api-key: {你的API Key}
 ```
 
 **示例**:
+
 ```bash
 curl -H "x-api-key: abc123def456..." \
   http://localhost:3000/api/merchant/tasks
 ```
 
----
+***
 
 ## 四、商户 API
 
@@ -1115,11 +1232,13 @@ curl -H "x-api-key: abc123def456..." \
 **描述**: 获取商户信息
 
 **请求 Header**:
+
 ```
 x-api-key: {你的API Key}
 ```
 
 **响应**:
+
 ```json
 {
   "code": 0,
@@ -1138,7 +1257,7 @@ x-api-key: {你的API Key}
 }
 ```
 
----
+***
 
 ### 4.2 更新商户信息
 
@@ -1147,11 +1266,13 @@ x-api-key: {你的API Key}
 **描述**: 更新商户信息
 
 **请求 Header**:
+
 ```
 x-api-key: {你的API Key}
 ```
 
 **请求参数**:
+
 ```json
 {
   "address": "1栋101室",
@@ -1161,6 +1282,7 @@ x-api-key: {你的API Key}
 ```
 
 **响应**:
+
 ```json
 {
   "code": 0,
@@ -1179,7 +1301,7 @@ x-api-key: {你的API Key}
 }
 ```
 
----
+***
 
 ### 4.3 获取商户统计信息
 
@@ -1188,11 +1310,13 @@ x-api-key: {你的API Key}
 **描述**: 获取商户统计信息
 
 **请求 Header**:
+
 ```
 x-api-key: {你的API Key}
 ```
 
 **响应**:
+
 ```json
 {
   "code": 0,
@@ -1205,7 +1329,7 @@ x-api-key: {你的API Key}
 }
 ```
 
----
+***
 
 ### 4.4 获取待接单的订单列表
 
@@ -1214,16 +1338,19 @@ x-api-key: {你的API Key}
 **描述**: 获取待接单的订单列表
 
 **请求 Header**:
+
 ```
 x-api-key: {你的API Key}
 ```
 
 **查询参数**:
+
 - `page`: 页码（默认 1）
 - `limit`: 每页数量（默认 50）
 - `buildingId`: 楼栋ID（可选）
 
 **响应**:
+
 ```json
 {
   "code": 0,
@@ -1265,7 +1392,7 @@ x-api-key: {你的API Key}
 }
 ```
 
----
+***
 
 ### 4.5 商户接单
 
@@ -1274,14 +1401,17 @@ x-api-key: {你的API Key}
 **描述**: 商户接取指定的待处理订单
 
 **请求 Header**:
+
 ```
 x-api-key: {你的API Key}
 ```
 
 **路径参数**:
+
 - `id`: 订单 ID
 
 **响应**:
+
 ```json
 {
   "code": 0,
@@ -1289,7 +1419,7 @@ x-api-key: {你的API Key}
 }
 ```
 
----
+***
 
 ### 4.6 取消接单（释放订单）
 
@@ -1298,14 +1428,17 @@ x-api-key: {你的API Key}
 **描述**: 商户取消已接的订单，释放回待接单池
 
 **请求 Header**:
+
 ```
 x-api-key: {你的API Key}
 ```
 
 **路径参数**:
+
 - `id`: 订单 ID
 
 **响应**:
+
 ```json
 {
   "code": 0,
@@ -1313,7 +1446,7 @@ x-api-key: {你的API Key}
 }
 ```
 
----
+***
 
 ### 4.7 获取商户的打印任务列表
 
@@ -1322,11 +1455,13 @@ x-api-key: {你的API Key}
 **描述**: 获取商户的打印任务列表
 
 **请求 Header**:
+
 ```
 x-api-key: {你的API Key}
 ```
 
 **响应**:
+
 ```json
 {
   "code": 0,
@@ -1370,7 +1505,7 @@ x-api-key: {你的API Key}
 }
 ```
 
----
+***
 
 ### 4.8 获取待处理的打印任务
 
@@ -1379,11 +1514,13 @@ x-api-key: {你的API Key}
 **描述**: 获取待处理的打印任务
 
 **请求 Header**:
+
 ```
 x-api-key: {你的API Key}
 ```
 
 **响应**:
+
 ```json
 {
   "code": 0,
@@ -1410,7 +1547,7 @@ x-api-key: {你的API Key}
 }
 ```
 
----
+***
 
 ### 4.9 获取打印任务详情
 
@@ -1419,14 +1556,17 @@ x-api-key: {你的API Key}
 **描述**: 获取打印任务详情
 
 **请求 Header**:
+
 ```
 x-api-key: {你的API Key}
 ```
 
 **路径参数**:
+
 - `id`: 打印任务 ID
 
 **响应**:
+
 ```json
 {
   "code": 0,
@@ -1472,7 +1612,7 @@ x-api-key: {你的API Key}
 }
 ```
 
----
+***
 
 ### 4.10 开始打印任务
 
@@ -1481,14 +1621,17 @@ x-api-key: {你的API Key}
 **描述**: 开始打印任务
 
 **请求 Header**:
+
 ```
 x-api-key: {你的API Key}
 ```
 
 **路径参数**:
+
 - `id`: 打印任务 ID
 
 **响应**:
+
 ```json
 {
   "code": 0,
@@ -1501,7 +1644,7 @@ x-api-key: {你的API Key}
 }
 ```
 
----
+***
 
 ### 4.11 完成打印任务
 
@@ -1510,14 +1653,17 @@ x-api-key: {你的API Key}
 **描述**: 完成打印任务
 
 **请求 Header**:
+
 ```
 x-api-key: {你的API Key}
 ```
 
 **路径参数**:
+
 - `id`: 打印任务 ID
 
 **响应**:
+
 ```json
 {
   "code": 0,
@@ -1530,7 +1676,7 @@ x-api-key: {你的API Key}
 }
 ```
 
----
+***
 
 ### 4.12 强制完成打印任务并同步订单
 
@@ -1539,14 +1685,17 @@ x-api-key: {你的API Key}
 **描述**: 强制完成打印任务并同步订单状态
 
 **请求 Header**:
+
 ```
 x-api-key: {你的API Key}
 ```
 
 **路径参数**:
+
 - `id`: 打印任务 ID
 
 **响应**:
+
 ```json
 {
   "code": 0,
@@ -1554,7 +1703,7 @@ x-api-key: {你的API Key}
 }
 ```
 
----
+***
 
 ### 4.13 标记打印任务失败
 
@@ -1563,14 +1712,17 @@ x-api-key: {你的API Key}
 **描述**: 标记打印任务失败
 
 **请求 Header**:
+
 ```
 x-api-key: {你的API Key}
 ```
 
 **路径参数**:
+
 - `id`: 打印任务 ID
 
 **请求参数**:
+
 ```json
 {
   "errorMsg": "打印失败原因"
@@ -1578,6 +1730,7 @@ x-api-key: {你的API Key}
 ```
 
 **响应**:
+
 ```json
 {
   "code": 0,
@@ -1590,7 +1743,7 @@ x-api-key: {你的API Key}
 }
 ```
 
----
+***
 
 ### 4.14 上传派送完成图片
 
@@ -1599,17 +1752,21 @@ x-api-key: {你的API Key}
 **描述**: 上传派送完成图片文件
 
 **请求 Header**:
+
 ```
 x-api-key: {你的API Key}
 ```
 
 **路径参数**:
+
 - `orderId`: 订单 ID
 
 **请求**: `multipart/form-data`
+
 - `file`: 图片文件
 
 **响应**:
+
 ```json
 {
   "code": 0,
@@ -1620,7 +1777,7 @@ x-api-key: {你的API Key}
 }
 ```
 
----
+***
 
 ### 4.15 完成订单
 
@@ -1629,14 +1786,17 @@ x-api-key: {你的API Key}
 **描述**: 完成订单
 
 **请求 Header**:
+
 ```
 x-api-key: {你的API Key}
 ```
 
 **路径参数**:
+
 - `orderId`: 订单 ID
 
 **响应**:
+
 ```json
 {
   "code": 0,
@@ -1644,24 +1804,24 @@ x-api-key: {你的API Key}
 }
 ```
 
----
+***
 
 ## 五、打印任务状态
 
-| 值 | 说明 |
-|----|------|
+| 值 | 说明  |
+| - | --- |
 | 0 | 待分配 |
 | 1 | 已分配 |
 | 2 | 打印中 |
 | 3 | 已完成 |
 | 4 | 已失败 |
 
----
+***
 
 ## 六、订单状态
 
-| 值 | 说明 |
-|----|------|
+| 值 | 说明  |
+| - | --- |
 | 0 | 待支付 |
 | 1 | 待打印 |
 | 2 | 打印中 |
@@ -1670,7 +1830,7 @@ x-api-key: {你的API Key}
 | 5 | 已取消 |
 | 6 | 已失败 |
 
----
+***
 
 ## 七、下载打印文件
 
@@ -1679,17 +1839,19 @@ x-api-key: {你的API Key}
 **接口**: `GET /api/files/:id/download`
 
 **说明**:
+
 - 不需要认证
 - 需要使用转换后的 PDF 文件进行打印
 
 **示例**:
+
 ```bash
 # 先获取任务详情，得到 fileId
 # 然后下载文件
 curl -O http://localhost:3000/api/files/1/download
 ```
 
----
+***
 
 ## 八、完整工作流程示例
 
@@ -1776,17 +1938,17 @@ if __name__ == "__main__":
     main()
 ```
 
----
+***
 
 ## 九、错误码
 
-| HTTP 状态码 | 说明 |
-|------------|------|
-| 401 | 无效的 API Key |
-| 404 | 任务不存在 |
-| 500 | 服务器内部错误 |
+| HTTP 状态码 | 说明          |
+| -------- | ----------- |
+| 401      | 无效的 API Key |
+| 404      | 任务不存在       |
+| 500      | 服务器内部错误     |
 
----
+***
 
 ## 十、关键代码位置
 
@@ -1795,7 +1957,7 @@ if __name__ == "__main__":
 - **商户打印任务控制器**：`printease-backend/src/modules/dispatch/dispatch.controller.ts`
 - **打印任务实体**：`printease-backend/src/modules/dispatch/entities/print-task.entity.ts`
 
----
+***
 
 # 第四部分：API 和数据库变更记录
 
@@ -1828,7 +1990,7 @@ ADD COLUMN `merchant_id` int DEFAULT NULL COMMENT '商户ID' AFTER `mpay_pay_url
 ADD INDEX `idx_merchant_id` (`merchant_id`);
 ```
 
----
+***
 
 ## 二、后端 API 变更
 
@@ -1839,6 +2001,7 @@ ADD INDEX `idx_merchant_id` (`merchant_id`);
 - **接口**: `POST /api/user/merchants`
 - **认证**: 需要 Bearer Token
 - **请求体**:
+
 ```json
 {
   "name": "打印店-1栋",
@@ -1849,7 +2012,9 @@ ADD INDEX `idx_merchant_id` (`merchant_id`);
   "mainBuildingName": "1栋"
 }
 ```
+
 - **响应**:
+
 ```json
 {
   "code": 0,
@@ -1872,6 +2037,7 @@ ADD INDEX `idx_merchant_id` (`merchant_id`);
 - **接口**: `GET /api/user/merchants`
 - **认证**: 需要 Bearer Token
 - **响应**:
+
 ```json
 {
   "code": 0,
@@ -1896,6 +2062,7 @@ ADD INDEX `idx_merchant_id` (`merchant_id`);
 - **接口**: `GET /api/user/merchants/:id`
 - **认证**: 需要 Bearer Token
 - **响应**:
+
 ```json
 {
   "code": 0,
@@ -1918,6 +2085,7 @@ ADD INDEX `idx_merchant_id` (`merchant_id`);
 - **接口**: `PUT /api/user/merchants/:id`
 - **认证**: 需要 Bearer Token
 - **请求体**:
+
 ```json
 {
   "name": "打印店-1栋",
@@ -1929,7 +2097,9 @@ ADD INDEX `idx_merchant_id` (`merchant_id`);
   "status": 1
 }
 ```
+
 - **响应**:
+
 ```json
 {
   "code": 0,
@@ -1951,6 +2121,7 @@ ADD INDEX `idx_merchant_id` (`merchant_id`);
 - **接口**: `DELETE /api/user/merchants/:id`
 - **认证**: 需要 Bearer Token
 - **响应**:
+
 ```json
 {
   "code": 0,
@@ -1968,6 +2139,7 @@ ADD INDEX `idx_merchant_id` (`merchant_id`);
 - **Content-Type**: `multipart/form-data`
 - **参数**: `file` (文件)
 - **响应**:
+
 ```json
 {
   "code": 0,
@@ -1990,6 +2162,7 @@ ADD INDEX `idx_merchant_id` (`merchant_id`);
 - **接口**: `GET /api/files/:id`
 - **认证**: 需要 Bearer Token
 - **响应**:
+
 ```json
 {
   "code": 0,
@@ -2020,6 +2193,7 @@ ADD INDEX `idx_merchant_id` (`merchant_id`);
   - `page`: 页码（默认 1）
   - `limit`: 每页数量（默认 10）
 - **响应**:
+
 ```json
 {
   "code": 0,
@@ -2062,6 +2236,7 @@ ADD INDEX `idx_merchant_id` (`merchant_id`);
 - **接口**: `DELETE /api/files/:id`
 - **认证**: 需要 Bearer Token
 - **响应**:
+
 ```json
 {
   "code": 0,
@@ -2077,6 +2252,7 @@ ADD INDEX `idx_merchant_id` (`merchant_id`);
 - **接口**: `POST /api/orders`
 - **认证**: 需要 Bearer Token
 - **请求体**:
+
 ```json
 {
   "fileIds": [1, 2],
@@ -2090,7 +2266,9 @@ ADD INDEX `idx_merchant_id` (`merchant_id`);
   "deliveryBuildingName": "1栋"
 }
 ```
+
 - **响应**:
+
 ```json
 {
   "code": 0,
@@ -2124,6 +2302,7 @@ ADD INDEX `idx_merchant_id` (`merchant_id`);
 - **接口**: `GET /api/orders/:id`
 - **认证**: 需要 Bearer Token
 - **响应**:
+
 ```json
 {
   "code": 0,
@@ -2164,6 +2343,7 @@ ADD INDEX `idx_merchant_id` (`merchant_id`);
   - `limit`: 每页数量（默认 10）
   - `status`: 订单状态（可选）
 - **响应**:
+
 ```json
 {
   "code": 0,
@@ -2200,6 +2380,7 @@ ADD INDEX `idx_merchant_id` (`merchant_id`);
 - **接口**: `PUT /api/orders/:id/cancel`
 - **认证**: 需要 Bearer Token
 - **响应**:
+
 ```json
 {
   "code": 0,
@@ -2213,6 +2394,7 @@ ADD INDEX `idx_merchant_id` (`merchant_id`);
 - **接口**: `POST /api/orders/:id/pay`
 - **认证**: 需要 Bearer Token
 - **响应**:
+
 ```json
 {
   "code": 0,
@@ -2228,6 +2410,7 @@ ADD INDEX `idx_merchant_id` (`merchant_id`);
 - **接口**: `PUT /api/orders/:id/refresh`
 - **认证**: 需要 Bearer Token
 - **响应**:
+
 ```json
 {
   "code": 0,
@@ -2247,12 +2430,15 @@ ADD INDEX `idx_merchant_id` (`merchant_id`);
 
 - **接口**: `POST /api/auth/wechat-login`
 - **请求体**:
+
 ```json
 {
   "code": "wx_login_code"
 }
 ```
+
 - **响应**:
+
 ```json
 {
   "code": 0,
@@ -2274,6 +2460,7 @@ ADD INDEX `idx_merchant_id` (`merchant_id`);
 - **接口**: `GET /api/user/me`
 - **认证**: 需要 Bearer Token
 - **响应**:
+
 ```json
 {
   "code": 0,
@@ -2294,6 +2481,7 @@ ADD INDEX `idx_merchant_id` (`merchant_id`);
 - **接口**: `PUT /api/user/me`
 - **认证**: 需要 Bearer Token
 - **请求体**:
+
 ```json
 {
   "nickname": "新昵称",
@@ -2301,7 +2489,9 @@ ADD INDEX `idx_merchant_id` (`merchant_id`);
   "phone": "13800138000"
 }
 ```
+
 - **响应**:
+
 ```json
 {
   "code": 0,
@@ -2321,6 +2511,7 @@ ADD INDEX `idx_merchant_id` (`merchant_id`);
 
 - **接口**: `GET /api/system/config`
 - **响应**:
+
 ```json
 {
   "code": 0,
@@ -2336,6 +2527,7 @@ ADD INDEX `idx_merchant_id` (`merchant_id`);
 
 - **接口**: `GET /api/system/price-config`
 - **响应**:
+
 ```json
 {
   "code": 0,
@@ -2352,72 +2544,72 @@ ADD INDEX `idx_merchant_id` (`merchant_id`);
 }
 ```
 
----
+***
 
 ## 三、订单状态枚举
 
-| 值 | 状态 | 说明 |
-|----|------|------|
-| 1 | 待支付 | 订单已创建，等待支付 |
+| 值 | 状态  | 说明          |
+| - | --- | ----------- |
+| 1 | 待支付 | 订单已创建，等待支付  |
 | 2 | 待接单 | 支付成功，等待商户接单 |
-| 3 | 打印中 | 商户已接单，正在打印 |
-| 4 | 已完成 | 打印完成 |
-| 5 | 已取消 | 订单已取消 |
+| 3 | 打印中 | 商户已接单，正在打印  |
+| 4 | 已完成 | 打印完成        |
+| 5 | 已取消 | 订单已取消       |
 
----
+***
 
 ## 四、打印参数枚举
 
 ### 4.1 颜色类型 (ColorType)
 
 | 值 | 说明 |
-|----|------|
+| - | -- |
 | 0 | 黑白 |
 | 1 | 彩色 |
 
 ### 4.2 单双面 (DoubleSided)
 
 | 值 | 说明 |
-|----|------|
+| - | -- |
 | 0 | 单面 |
 | 1 | 双面 |
 
 ### 4.3 打印质量 (PrintQuality)
 
-| 值 | 说明 |
-|----|------|
+| 值      | 说明 |
+| ------ | -- |
 | normal | 普通 |
-| high | 高清 |
+| high   | 高清 |
 
----
+***
 
 ## 五、文件转换状态
 
-| 状态 | 说明 |
-|------|------|
-| pending | 待转换 |
-| converting | 转换中 |
-| completed | 转换完成 |
-| failed | 转换失败 |
+| 状态         | 说明   |
+| ---------- | ---- |
+| pending    | 待转换  |
+| converting | 转换中  |
+| completed  | 转换完成 |
+| failed     | 转换失败 |
 
----
+***
 
 ## 六、前端页面路由
 
-| 路径 | 页面 | 说明 |
-|------|------|------|
-| /pages/admin/index | 管理后台首页 | 管理端主页面 |
-| /pages/admin/login | 管理员登录 | 管理员登录页面 |
-| /pages/admin/price-settings | 价格管理 | 价格配置页面 |
-| /pages/admin/merchant-list | 商户管理 | 商户列表页面 |
-| /pages/admin/merchant-create | 创建商户 | 创建新商户页面 |
-| /pages/admin/order-list | 订单管理 | 订单管理页面 |
-| /pages/merchant/index | 商户中心 | 商户端主页面 |
-| /pages/merchant/login | 商户登录 | 商户登录页面 |
-| /pages/merchant/settings | 商户设置 | 商户设置页面 |
-| /pages/merchant/grab-orders | 接单大厅 | 接单大厅页面 |
+| 路径                           | 页面     | 说明      |
+| ---------------------------- | ------ | ------- |
+| /pages/admin/index           | 管理后台首页 | 管理端主页面  |
+| /pages/admin/login           | 管理员登录  | 管理员登录页面 |
+| /pages/admin/price-settings  | 价格管理   | 价格配置页面  |
+| /pages/admin/merchant-list   | 商户管理   | 商户列表页面  |
+| /pages/admin/merchant-create | 创建商户   | 创建新商户页面 |
+| /pages/admin/order-list      | 订单管理   | 订单管理页面  |
+| /pages/merchant/index        | 商户中心   | 商户端主页面  |
+| /pages/merchant/login        | 商户登录   | 商户登录页面  |
+| /pages/merchant/settings     | 商户设置   | 商户设置页面  |
+| /pages/merchant/grab-orders  | 接单大厅   | 接单大厅页面  |
 
----
+***
 
 ## 七、数据库初始化脚本
 
@@ -2431,35 +2623,43 @@ ADD INDEX `idx_merchant_id` (`merchant_id`);
 
 注意：在生产环境中，建议关闭 `synchronize`，使用迁移脚本。
 
----
+***
 
 ## 十、定时任务 (Schedule)
+
 系统使用 `@nestjs/schedule` 实现定时任务调度。
 
 ### 10.1 依赖安装
+
 在后端目录中执行：
+
 ```bash
 cd PrintEase-backend
 npm install @nestjs/schedule @types/cron
 ```
 
 ### 10.2 定时任务配置
+
 定时任务服务位于 `src/modules/order/order-scheduler.service.ts`
 
 ### 10.3 定时任务列表
-| 任务名称 | 执行频率 | 功能描述 |
-|---------|---------|---------|
+
+| 任务名称                  | 执行频率     | 功能描述                |
+| --------------------- | -------- | ------------------- |
 | `handleExpiredOrders` | 每天 01:00 | 检查并取消超过 24 小时的待支付订单 |
-| `testScheduledTask` | 每 5 分钟 | 测试任务（开发调试用） |
+| `testScheduledTask`   | 每 5 分钟   | 测试任务（开发调试用）         |
 
 ### 10.4 订单自动取消逻辑
+
 1. 查询所有状态为「待支付」(status = 0) 的订单
 2. 筛选出创建时间超过 24 小时的订单
 3. 将订单状态更新为「已取消」(status = 4)
 4. 记录取消的订单数量
 
 ### 10.5 模块注册
+
 在 `order.module.ts` 中注册：
+
 ```typescript
 import { ScheduleModule } from '@nestjs/schedule';
 import { OrderSchedulerService } from './order-scheduler.service';
@@ -2472,6 +2672,8 @@ export class OrderModule {}
 ```
 
 ### 10.6 支付宝支付开关
+
 - 系统配置中的支付宝支付开关默认开启
 - 即使配置已存在，系统也会强制设置为开启状态
 - 确保用户能正常使用支付宝支付功能
+
