@@ -6,6 +6,8 @@ param(
   [switch]$Plan,
   [switch]$PromptDatabaseRootPassword,
   [ValidateSet('PasswordPrompt','PasswordFile','Certificate','NoRootInput')][string]$StartupAuthMode,
+  [Alias('DatabaseSslMode')][ValidateSet('Required','Disabled','LocalPlaintext')][string]$SSLMode,
+  [switch]$AllowLocalPlaintext,
   [switch]$StartWorker,
   [string]$WorkerConfig,
   [string]$Python = 'python'
@@ -25,6 +27,22 @@ if ($Plan) {
   Write-Host 'Plan performs no deployment. Prepare an isolated checkout, private files, networks and an empty database volume; provision schema with separate administrator credentials.'
   return
 }
+$savedDatabaseSSLMode = $env:DATABASE_SSL_MODE
+$savedDatabaseSSLCompose = $env:DATABASE_SSL_COMPOSE_FILE
+try {
+if ('database' -in $Components) {
+  if ($SSLMode) { $databaseAuth.SSLMode = $SSLMode }
+  if ($AllowLocalPlaintext) { $databaseAuth.AllowLocalPlaintext = $true }
+  if ('converter' -in $Components) { $databaseAuth.RejectPlaintextConverter = $true }
+  $resolvedSSLMode = & "$backend/database/start.ps1" -EnvFile $EnvFile -ResolveSSLModeOnly -ValidateOnly:$ValidateOnly @databaseAuth
+  $databaseAuth.SSLMode = $resolvedSSLMode
+  if ($resolvedSSLMode -eq 'LocalPlaintext') {
+    $databaseAuth.AllowLocalPlaintext = $true
+    if ($Components | Where-Object { $_ -ne 'database' }) { throw 'Disabled SSL is supported by this entrypoint only with -Components database for local development; application production profiles require TLS.' }
+  }
+  $env:DATABASE_SSL_MODE = $resolvedSSLMode
+  $env:DATABASE_SSL_COMPOSE_FILE = if ($resolvedSSLMode -eq 'Required') { 'compose.ssl.yml' } else { 'compose.off.yml' }
+} elseif ($SSLMode -in @('Disabled','LocalPlaintext')) { throw 'Disabled SSL requires -Components database for local development.' }
 foreach ($component in $ordered) {
   switch ($component) {
     'database' { & "$backend/database/start.ps1" -EnvFile $EnvFile -ValidateOnly @databaseAuth }
@@ -53,3 +71,7 @@ foreach ($component in $ordered) {
   }
 }
 Write-Host 'Selected services started. Real WPS acceptance, payment acceptance and data migration remain separate gates.'
+} finally {
+  $env:DATABASE_SSL_MODE = $savedDatabaseSSLMode
+  $env:DATABASE_SSL_COMPOSE_FILE = $savedDatabaseSSLCompose
+}
