@@ -13,7 +13,7 @@ PrintEase 印易是一个完整的自助打印解决方案，集成了文件上�
 PrintEase/
 ├── PrintEase-admin/          # 管理后台 (待开发)
 ├── PrintEase-backend/        # 后端服务
-│   ├── converter/            # 文件转换服务
+│   ├── docker/               # 后端与数据库基础设施
 │   ├── src/
 │   │   └── modules/
 │   │       ├── auth/         # 认证模块
@@ -24,6 +24,7 @@ PrintEase/
 │   │       ├── system/       # 系统模块
 │   │       └── conversion/   # 转换模块
 │   └── ...
+├── convert2api/              # 独立转换 API、队列、WPS Worker 与部署项目
 ├── PrintEase-dispatch/       # 云印调度客户端
 ├── PrintEase-uniapp/         # 微信小程序
 ├── mpay/                     # 码支付系统

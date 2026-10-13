@@ -13,3 +13,6 @@
 [submodule "PrintEase-dispatch"]
 	path = PrintEase-dispatch
 	url = https://github.com/fantangCK/PrintEase-dispatch
+[submodule "convert2api"]
+	path = convert2api
+	url = https://github.com/fantangCK/convert2api.git

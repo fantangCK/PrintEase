@@ -9,7 +9,7 @@ param(
   [Alias('DatabaseSslMode')][ValidateSet('Required','Disabled','LocalPlaintext')][string]$SSLMode,
   [switch]$AllowLocalPlaintext,
   [switch]$StartWorker,
-  [string]$WorkerConfig,
+  [Alias('WorkerConfigFile')][string]$WorkerConfig,
   [string]$Python = 'python'
 )
 $ErrorActionPreference = 'Stop'
@@ -34,7 +34,7 @@ if ('database' -in $Components) {
   if ($SSLMode) { $databaseAuth.SSLMode = $SSLMode }
   if ($AllowLocalPlaintext) { $databaseAuth.AllowLocalPlaintext = $true }
   if ('converter' -in $Components) { $databaseAuth.RejectPlaintextConverter = $true }
-  $resolvedSSLMode = & "$backend/database/start.ps1" -EnvFile $EnvFile -ResolveSSLModeOnly -ValidateOnly:$ValidateOnly @databaseAuth
+  $resolvedSSLMode = & "$backend/docker/database/start.ps1" -EnvFile $EnvFile -ResolveSSLModeOnly -ValidateOnly:$ValidateOnly @databaseAuth
   $databaseAuth.SSLMode = $resolvedSSLMode
   if ($resolvedSSLMode -eq 'LocalPlaintext') {
     $databaseAuth.AllowLocalPlaintext = $true
@@ -45,8 +45,8 @@ if ('database' -in $Components) {
 } elseif ($SSLMode -in @('Disabled','LocalPlaintext')) { throw 'Disabled SSL requires -Components database for local development.' }
 foreach ($component in $ordered) {
   switch ($component) {
-    'database' { & "$backend/database/start.ps1" -EnvFile $EnvFile -ValidateOnly @databaseAuth }
-    'converter' { & "$backend/converter/start.ps1" -EnvFile $EnvFile -ValidateOnly -StartWorker:$StartWorker -WorkerConfig $WorkerConfig -Python $Python }
+    'database' { & "$backend/docker/database/start.ps1" -EnvFile $EnvFile -ValidateOnly @databaseAuth }
+    'converter' { & "$PSScriptRoot/convert2api/scripts/start-api.ps1" -EnvFile $EnvFile -ValidateOnly -StartWorker:$StartWorker -WorkerConfig $WorkerConfig -Python $Python }
     'mpay' {
       & docker compose --env-file $EnvFile -f "$PSScriptRoot/mpay/docker-compose.production.yml" config --quiet
       if ($LASTEXITCODE -ne 0) { throw 'mpay Compose validation failed' }
@@ -58,8 +58,8 @@ foreach ($component in $ordered) {
 if ($ValidateOnly) { Write-Host 'Selected configuration checks passed. No services were started and no WPS acceptance was claimed.'; return }
 foreach ($component in $ordered) {
   switch ($component) {
-    'database' { & "$backend/database/start.ps1" -EnvFile $EnvFile @databaseAuth }
-    'converter' { & "$backend/converter/start.ps1" -EnvFile $EnvFile -StartWorker:$StartWorker -WorkerConfig $WorkerConfig -Python $Python }
+    'database' { & "$backend/docker/database/start.ps1" -EnvFile $EnvFile @databaseAuth }
+    'converter' { & "$PSScriptRoot/convert2api/scripts/start-api.ps1" -EnvFile $EnvFile -StartWorker:$StartWorker -WorkerConfig $WorkerConfig -Python $Python }
     'mpay' {
       & docker compose --env-file $EnvFile -f "$PSScriptRoot/mpay/docker-compose.production.yml" up -d --build nginx php
       if ($LASTEXITCODE -ne 0) { throw 'mpay deployment failed' }
