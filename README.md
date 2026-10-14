@@ -36,7 +36,7 @@ git submodule update --init --recursive
 
 - 后端建议 Node.js 22.19.0，与 CI 和部署脚本一致；数据库使用 MySQL 8.0。
 - 管理后台要求 Node.js >=20.19.0、npm >=10；采用 Node.js 22.19.0 可与后端统一。
-- 打印客户端使用 Conda 锁定的 Python 3.10.16；转换项目要求 Python >=3.11，CI 使用 3.12，两者不要强行共用环境。
+- 打印客户端和转换项目共用 Conda `printease-dev`、Python 3.11；两工程的运行、开发、构建依赖清单与带哈希锁文件一致。任一工程创建环境即可，已存在时使用 `conda env update -f environment.yml`。
 - WPS Worker 需要 Windows、已安装并可自动化调用的 WPS，以及专用交互会话。
 - mpay 使用 PHP >=8.0，容器采用 PHP 8.2；Windows 部署脚本使用 PowerShell 7，容器部署需要 Docker Compose。
 
@@ -75,7 +75,7 @@ npm run build:mp-weixin
 
 ```powershell
 conda env create -f environment.yml
-conda activate printease-dispatch
+conda activate printease-dev
 python -m pip check
 python -m src.main
 ```
@@ -85,7 +85,11 @@ python -m src.main
 ### 转换服务
 
 ```powershell
-python -m pip install -e '.[api]'
+# 共用环境已创建时不再重复创建：
+conda activate printease-dev
+python -m pip check
+# 安装本地源码和 CLI 入口（依赖已由共享锁文件安装）：
+python -m pip install -e .
 # 配置 CONVERTER_* 环境变量后启动 API：
 python -m convert2api api --host 127.0.0.1 --port 8080
 # Windows Worker 使用独立私有配置：
