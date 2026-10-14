@@ -80,7 +80,7 @@ python -m pip check
 python -m src.main
 ```
 
-打印机、后端地址、认证及 SumatraPDF 配置见客户端 README。打包入口为 `script/build.ps1`，需要真实 SHA 和 RunId；打包完成后仍需目标机器打印验收。
+打印机、后端地址、认证及 SumatraPDF 配置见客户端 README。打包入口为 `scripts/build.ps1`，需要真实 SHA 和 RunId；打包完成后仍需目标机器打印验收。
 
 ### 转换服务
 
